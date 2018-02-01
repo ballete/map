@@ -1,0 +1,1127 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <title>Network cost control map tool</title>
+    <meta name="viewport" content="initial-scale=1.0">
+    <meta charset="utf-8">
+    <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.7.7/xlsx.core.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xls/0.7.4-a/xls.core.min.js"></script>
+
+    <style>
+        /* Always set the map height explicitly to define the size of the div
+        * element that contains the map. */
+        #map {
+            height: 100%;
+            border-radius:10px;
+        }
+        /* Optional: Makes the sample page fill the window. */
+        html, body {
+            height: 85%;
+            margin: 1%;
+            padding: 0;
+        }
+        #div_csv {
+            display: inline-block;
+            width: 30%;
+            margin-top: -1%;
+        }
+        #tour {
+            display: inline-block;
+            width: 30%;
+        }
+        #opt {
+            display: inline-block;
+            width: 40%;
+            text-align: right;
+            float:right;
+        }
+        #tourString{
+            width:300px;
+        }
+        #info {
+            display: block;
+            font-weight: bold;
+            color: darkmagenta;
+            margin-top: 1%;
+        }
+        #directions-panel, #excel-panel  {
+            margin-top: 5px;
+            margin-bottom: 1%;
+            border-radius: 10px;
+            border: 2px solid darkmagenta;
+            padding: 2%;
+        }
+        #cont {
+            border-radius: 10px;
+            border: 2px solid darkmagenta;
+            padding: 1%;
+            margin-top: 1%;
+            margin-bottom: 1%;
+        }
+        #init {
+            cursor: pointer;
+            color: darkmagenta;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        .t {
+            border: solid 1px orange;
+            border-radius: 15px;
+            padding: 10px;
+            font-size: large;
+            margin-bottom:10px;
+        }
+        .tourS {
+            font-weight: bold;
+            color: darkmagenta;
+            cursor: pointer;
+            font-size: medium;
+        }
+        .bp {
+            margin-left: 20px;
+            margin-top: 5px;
+            font-size: medium;
+            color: darkorange;
+        }
+        .datTour {
+            margin-left: 20px;
+            font-size: medium;
+            color: darkgray;
+        }
+        .cancelledTour {
+            margin-left: 20px;
+            font-size: medium;
+            color: darkseagreen;
+        }        
+        .label {
+            color: darkorange;
+            font-weight: bold;
+            font-size: medium;
+        }
+        .cab {
+            /*border: solid 1px orange;*/
+            border-radius: 15px;
+            padding: 10px;
+            font-size: xx-large;
+            margin-bottom: 10px;
+            margin-top: 20px;
+            color: darkmagenta;
+            font-weight: bold;
+            text-decoration: underline;
+            display: inline-block;
+        }
+        #cab_tot{
+            margin-top:0px;
+        }
+        .filters {
+            display: inline-block;
+            margin-left: 5px;
+            border: solid 1px darkmagenta;
+            padding: 10px;
+        }
+        .f{
+            display:inline-block;
+        }
+        #lblT, #lblM {
+            display: inline-block;
+        }
+    </style>
+</head >
+<body>
+    <div id="init">
+        <a id="showHubs" onclick="initMap()">Show hubs</a>
+        <input type="hidden" id="hidShowHubs" value='true'>
+    </div>
+    <div id="map"></div>
+    <div id="info"></div>
+
+    <div id="cont">
+        <div id="div_csv">
+            <p>Select local file (.xlsx or .xls):</p>
+            <input type="file" id="excelfile" />            
+        </div>
+
+        <div id="tour">
+            <!--<input type="hidden" id="hidHubs" value='{"AE4": {"countryCode":"GB", "countryName":"UNITED KINGDOM", "depotName":"Atherstone - Parcel Distribution Centre", "postcode":"CV9 2RY", "town":"Warwickshire", "lat":"52.5841575", "lng":"-1.5591315"},"51A": {"countryCode":"FR", "countryName":"FRANCE", "depotName":"REIMS", "postcode":"51689", "town":"REIMS", "lat":"49.2203", "lng":"4.11273"}, "59A": {"countryCode":"FR", "countryName":"FRANCE", "depotName":"LILLE", "postcode":"59810", "town":"LESQUIN", "lat":"50.5766028", "lng":"3.1118724"}, "67A": {"countryCode":"FR", "countryName":"FRANCE", "depotName":"STRASBOURG", "postcode":"67118", "town":"GEISPOLSHEIM", "lat":"48.53688", "lng":"7.6784"}, "93A": {"countryCode":"FR", "countryName":"FRANCE", "depotName":"TREMBLAY", "postcode":"93290", "town":"TREMBLAY EN FRANCE", "lat":"48.9798741", "lng":"2.5382765"}, "94A": {"countryCode":"FR", "countryName":"FRANCE", "depotName":"ALFORTVILLE", "postcode":"94140", "town":"ALFORTVILLE", "lat":"48.7785526", "lng":"2.4267339"}, "ABRU": {"countryCode":"BE", "countryName":"BELGIUM", "depotName":"ABRU - BRUSSELS AIRPORT", "postcode":"1931", "town":"MACHELEN", "lat":"50.9041989", "lng":"4.4511338"}, "AMS": {"countryCode":"NL", "countryName":"NETHERLANDS", "depotName":"GLOBAL TRANSIT HUB", "postcode":"1438 AN", "town":"OUDE MEER", "lat":"52.293926", "lng":"4.7883848"}, "ANR": {"countryCode":"BE", "countryName":"BELGIUM", "depotName":"ANTWERP", "postcode":"2850", "town":"BOOM", "lat":"51.0977989", "lng":"4.3603937"}, "ARH": {"countryCode":"NL", "countryName":"NETHERLANDS", "depotName":"ARNHEM", "postcode":"6921 RG", "town":"DUIVEN", "lat":"51.9671719", "lng":"6.013392"}, "ATH": {"countryCode":"GR", "countryName":"GREECE", "depotName":"ATHENS", "postcode":"190 03", "town":"MARKOPOULO", "lat":"37.9397445", "lng":"23.9484174"}, "AVT3": {"countryCode":"NL", "countryName":"NETHERLANDS", "depotName":"ARVATO / POSEIDON", "postcode":"6598", "town":"Heijen", "lat":"51.6640451", "lng":"5.9998124"}, "BCKM": {"countryCode":"CZ", "countryName":"CZECH REPUBLIC", "depotName":"Beckman Coulter", "postcode":"10227", "town":"Praha", "lat":"50.0681718", "lng":"14.5287806"}, "BCN": {"countryCode":"ES", "countryName":"SPAIN", "depotName":"BARCELONA", "postcode":"08040", "town":"BARCELONA", "lat":"41.3382573", "lng":"2.1418718"}, "BDD1": {"countryCode":"BE", "countryName":"BELGIUM", "depotName":"Becton Dickinson Distribution", "postcode":"9140", "town":"Teemse", "lat":"51.1431089", "lng":"4.1921904"}, "BE7": {"countryCode":"DE", "countryName":"GERMANY", "depotName":"BERLIN", "postcode":"13627", "town":"BERLIN", "lat":"52.5442", "lng":"13.30874"}, "BEG": {"countryCode":"RS", "countryName":"SERBIA", "depotName":"BELGRADE", "postcode":"11070", "town":"NOVI BEOGRAD", "lat":"44.8143981", "lng":"20.4775971"}, "BEK1": {"countryCode":"CZ", "countryName":"CZECH REPUBLIC", "depotName":"Bekaert Textiles CZ s.r.o", "postcode":"352 01", "town":"As", "lat":"50.219726", "lng":"12.1894507"}, "BER": {"countryCode":"DE", "countryName":"GERMANY", "depotName":"BERLIN BRANDENBURG AIRPORT", "postcode":"12521", "town":"BERLIN", "lat":"52.3828091", "lng":"13.5099897"}, "BF4": {"countryCode":"GB", "countryName":"UNITED KINGDOM", "depotName":"BELFAST DEPOT", "postcode":"BT29 4TQ", "town":"CO ANTRIM", "lat":"54.70268", "lng":"-6.17082"}, "BI6": {"countryCode":"ES", "countryName":"SPAIN", "depotName":"BILBAO", "postcode":"48510", "town":"VALLE DE TRAPAGA", "lat":"43.30472", "lng":"-3.03695"}, "BIE": {"countryCode":"DE", "countryName":"GERMANY", "depotName":"BIELEFELD", "postcode":"33719", "town":"BIELEFELD", "lat":"52.0106268", "lng":"8.6231367"}, "BLQ": {"countryCode":"IT", "countryName":"ITALY", "depotName":"BOLOGNA AIRPORT", "postcode":"40132", "town":"BOLOGNA", "lat":"44.529443", "lng":"11.2869901"}, "BLL": {"countryCode":"DK", "countryName":"DENMARK", "depotName":"KOLDING", "postcode":"6000", "town":"KOLDING", "lat":"55.5357117", "lng":"9.4769133"}, "BO1": {"countryCode":"IT", "countryName":"ITALY", "depotName":"BOLOGNA LAME", "postcode":"40131", "town":"BOLOGNA", "lat":"44.5411", "lng":"11.34545"}, "BOS6": {"countryCode":"PL", "countryName":"POLAND", "depotName":"BOSCH Wroclaw", "postcode":"55-040", "town":"Bielany Wroclawski", "lat":"51.0460539", "lng":"16.9644093"}, "BRD1": {"countryCode":"BE", "countryName":"BELGIUM", "depotName":"BARD EDC", "postcode":"2250", "town":"Olen", "lat":"51.1488493", "lng":"4.9101692"}, "BRE": {"countryCode":"DE", "countryName":"GERMANY", "depotName":"BREMEN", "postcode":"28199", "town":"BREMEN", "lat":"53.0600144", "lng":"8.7730656"}, "BRQ": {"countryCode":"CZ", "countryName":"CZECH REPUBLIC", "depotName":"BRNO", "postcode":"664 42", "town":"MODRICE", "lat":"49.1157101", "lng":"16.6028012"}, "BRU": {"countryCode":"BE", "countryName":"BELGIUM", "depotName":"BRUSSELS", "postcode":"1830", "town":"MACHELEN", "lat":"50.90319", "lng":"4.45599"}, "BRW1": {"countryCode":"BE", "countryName":"BELGIUM", "depotName":"Brunswick Marine in Emea", "postcode":"4800", "town":"Verviers", "lat":"50.6129199", "lng":"5.832719"}, "BSA": {"countryCode":"FR", "countryName":"FRANCE", "depotName":"BESANCON INTERNATIONAL", "postcode":"25480", "town":"MISEREY SALINES", "lat":"47.2807325", "lng":"5.9894097"}, "BSL": {"countryCode":"CH", "countryName":"SWITZERLAND", "depotName":"BASEL", "postcode":"4030", "town":"BASEL", "lat":"47.6053654", "lng":"7.5245399"}, "BTS": {"countryCode":"SK", "countryName":"SLOVAKIA", "depotName":"BRATISLAVA", "postcode":"830 06", "town":"BRATISLAVA", "lat":"48.198863", "lng":"17.196608"}, "BUD": {"countryCode":"HU", "countryName":"HUNGARY", "depotName":"BUDAPEST", "postcode":"1185", "town":"BUDAPEST", "lat":"47.4404931", "lng":"19.2232116"}, "BUH": {"countryCode":"RO", "countryName":"ROMANIA", "depotName":"BUCHAREST", "postcode":"075100", "town":"OTOPENI", "lat":"44.578718", "lng":"26.0841706"}, "BZQ": {"countryCode":"BE", "countryName":"BELGIUM", "depotName":"BRUSSELS HUB", "postcode":"1830", "town":"MACHELEN", "lat":"50.90319", "lng":"4.45599"}, "C5H": {"countryCode":"FR", "countryName":"FRANCE", "depotName":"CHARLES DE GAULLE HUB CDGH", "postcode":"95700", "town":"ROISSY CHARLES DE GAULLE CEDE", "lat":"49.0062251", "lng":"2.5072045"}, "C9H": {"countryCode":"DE", "countryName":"GERMANY", "depotName":"COLOGNE HUB", "postcode":"51147", "town":"KOELN", "lat":"50.873557", "lng":"7.127388"}, "C9R": {"countryCode":"DE", "countryName":"GERMANY", "depotName":"COLOGNE RAMP CGNR", "postcode":"51147", "town":"KOELN", "lat":"50.8739457", "lng":"7.1281431"}, "CBP": {"countryCode":"PT", "countryName":"PORTUGAL", "depotName":"COIMBRA", "postcode":"3045-504", "town":"TAVEIRO", "lat":"40.229054", "lng":"-8.4369848"}, "CC8": {"countryCode":"TR", "countryName":"TURKEY", "depotName":"CATALCA", "postcode":"34537", "town":"ISTANBUL", "lat":"41.0768426", "lng":"28.5062254"}, "CD3": {"countryCode":"FR", "countryName":"FRANCE", "depotName":"ROISSY DOMESTIC CDG", "postcode":"95700", "town":"AEROPORT ROISSY CHARLES DE G", "lat":"48.9946611", "lng":"2.530971"}, "CDG": {"countryCode":"FR", "countryName":"FRANCE", "depotName":"PARIS CHARLES DE GAULLE APT", "postcode":"95704", "town":"ROISSY-CDG", "lat":"49.0012268", "lng":"2.5365282"}, "CDG2": {"countryCode":"FR", "countryName":"FRANCE", "depotName":"CDG A/P COMM. UPLIFT", "postcode":"93290", "town":"ROISSY", "lat":"48.9937627", "lng":"2.529502"}, "CEV2": {"countryCode":"NL", "countryName":"NETHERLANDS", "depotName":"CEVA Eindhoven", "postcode":"5651", "town":"Eindhoven", "lat":"51.4734255", "lng":"5.4097995"}, "CGN": {"countryCode":"DE", "countryName":"GERMANY", "depotName":"IMPORT COLOGNE", "postcode":"51149", "town":"KOELN", "lat":"50.9139198", "lng":"7.067263"}, "CIA": {"countryCode":"IT", "countryName":"ITALY", "depotName":"CIAMPINO AIRPORT", "postcode":"00043", "town":"CIAMPINO AEROPORTO", "lat":"41.7854468", "lng":"12.5988001"}, "CIN1": {"countryCode":"DE", "countryName":"GERMANY", "depotName":"CINRAM WIRELESS GMBH", "postcode":"52477", "town":"ALSDORF", "lat":"50.87637", "lng":"6.21934"}, "CLJ": {"countryCode":"RO", "countryName":"ROMANIA", "depotName":"CLUJ", "postcode":"400397", "town":"CLUJ-NAPOCA", "lat":"46.790742", "lng":"23.7045979"}, "COL": {"countryCode":"DE", "countryName":"GERMANY", "depotName":"COLOGNE", "postcode":"51149", "town":"KOELN", "lat":"50.9181567", "lng":"7.042476"}, "CPH": {"countryCode":"DK", "countryName":"DENMARK", "depotName":"COPENHAGEN", "postcode":"2650", "town":"HVIDOVRE", "lat":"55.6068424", "lng":"12.4891508"}, "CH4": {"countryCode":"FR", "countryName":"FRANCE", "depotName":"CHARTRES INTERNATIONAL", "postcode":"28630", "town":"GELAINVILLE", "lat":"48.4396132", "lng":"1.5324447"}, "DAI1": {"countryCode":"BE", "countryName":"BELGIUM", "depotName":"DAIKIN EUROPE NV", "postcode":"8400", "town":"Oostende", "lat":"51.2108015", "lng":"2.9572714"}, "DFT": {"countryCode":"DE", "countryName":"GERMANY", "depotName":"HUB RHEIN MAIN DFT", "postcode":"65205", "town":"WIESBADEN", "lat":"50.0385982", "lng":"8.2628977"}, "DNG": {"countryCode":"DE", "countryName":"GERMANY", "depotName":"NUERNBERG HUB", "postcode":"90475", "town":"NUERNBERG", "lat":"49.3880338", "lng":"11.1740973"}, "DON1": {"countryCode":"BE", "countryName":"BELGIUM", "depotName":"DONALDSON EUROPE BVBA", "postcode":"8000", "town":"BRUGGE", "lat":"51.2526232", "lng":"3.2116421"}, "DRS": {"countryCode":"DE", "countryName":"GERMANY", "depotName":"DRESDEN", "postcode":"01683", "town":"NOSSEN", "lat":"51.0497237", "lng":"13.2928656"}, "DTM": {"countryCode":"DE", "countryName":"GERMANY", "depotName":"DORTMUND", "postcode":"44536", "town":"LUENEN", "lat":"51.5928164", "lng":"7.430846"}, "DUB": {"countryCode":"IE", "countryName":"IRELAND", "depotName":"DUBLIN", "postcode":"DUBLIN 24", "town":"TALLAGHT", "lat":"53.2975288", "lng":"-6.3687303"}, "DUB2": {"countryCode":"IE", "countryName":"IRELAND", "depotName":"Swaplocation Dublin", "postcode":"", "town":"Dublin", "lat":"53.3509661", "lng":"-6.2204821"}, "DUS": {"countryCode":"DE", "countryName":"GERMANY", "depotName":"HILDEN", "postcode":"40721", "town":"HILDEN", "lat":"51.16123", "lng":"6.91833"}, "DZ5": {"countryCode":"GB", "countryName":"UNITED KINGDOM", "depotName":"DARTFORD", "postcode":"DA1 5AH", "town":"DARTFORD", "lat":"51.458998", "lng":"0.2197473"}, "EAS": {"countryCode":"ES", "countryName":"SPAIN", "depotName":"SAN SEBASTIAN", "postcode":"20140", "town":"ANDOAIN", "lat":"43.2173859", "lng":"-2.0210563"}, "ECL": {"countryCode":"FR", "countryName":"FRANCE", "depotName":"EU CLEARANCE", "postcode":"68870", "town":"BARTENHEIM", "lat":"47.6392947", "lng":"7.4937372"}, "EF3": {"countryCode":"DE", "countryName":"GERMANY", "depotName":"ERFURT DEPOT", "postcode":"99092", "town":"ERFURT", "lat":"50.9760135", "lng":"10.9556808"}, "EGL1": {"countryCode":"HU", "countryName":"HUNGARY", "depotName":"Eglo HU", "postcode":"3060", "town":"Paszto", "lat":"47.9304919", "lng":"19.7109465"}, "EIN": {"countryCode":"NL", "countryName":"NETHERLANDS", "depotName":"EINDHOVEN", "postcode":"5651 GG", "town":"EINDHOVEN", "lat":"51.478847", "lng":"5.4076954"}, "EMA": {"countryCode":"GB", "countryName":"UNITED KINGDOM", "depotName":"EAST MIDLANDS AIR HUB", "postcode":"DE74 2SA", "town":"CASTLE DONINGTON  DERBYSHIRE", "lat":"52.8272499", "lng":"-1.3214208"}, "EPC2": {"countryCode":"AT", "countryName":"AUSTRIA", "depotName":"Epcos OHG", "postcode":"8530", "town":"Deutschlandberg", "lat":"46.8219", "lng":"15.232246"}, "ERG1": {"countryCode":"NL", "countryName":"NETHERLANDS", "depotName":"Roos Electronics B.V.", "postcode":"5626 DL", "town":"Eindhoven", "lat":"51.48082", "lng":"5.41749"}, "ETZ": {"countryCode":"FR", "countryName":"FRANCE", "depotName":"METZ INTERNATIONAL", "postcode":"57365", "town":"FLEVY", "lat":"49.2332227", "lng":"6.2305025"}, "F1T": {"countryCode":"DE", "countryName":"GERMANY", "depotName":"FDX EXP/FRANKFURT (FTL)", "postcode":"60549", "town":"FRANKFURT", "lat":"50.0403365", "lng":"8.5348648"}, "FBCN": {"countryCode":"ES", "countryName":"SPAIN", "depotName":"FedEx Barcelona", "postcode":"08820", "town":"BARCELONA", "lat":"41.30167", "lng":"2.0682076"}, "FBG": {"countryCode":"DE", "countryName":"GERMANY", "depotName":"FREIBURG", "postcode":"79336", "town":"HERBOLZHEIM", "lat":"48.2196569", "lng":"7.7574163"}, "FCDG": {"countryCode":"FR", "countryName":"FRANCE", "depotName":"FEDEX CDG - GB4 FEDEX", "postcode":"93290", "town":"Tremblay-en-France", "lat":"48.9952", "lng":"2.5291"}, "FCGN": {"countryCode":"DE", "countryName":"GERMANY", "depotName":"FedEx  Cologne", "postcode":"51147", "town":"Cologne", "lat":"50.874025", "lng":"7.1254057"}, "FCPH": {"countryCode":"DK", "countryName":"DENMARK", "depotName":"FedEx Kastrup", "postcode":"2770", "town":"KASTRUP", "lat":"55.6176013", "lng":"12.6776353"}, "FIB1": {"countryCode":"DE", "countryName":"GERMANY", "depotName":"Fibro", "postcode":"DE-74855", "town":"Hassmersheim", "lat":"49.3115031", "lng":"9.1390687"}, "FMIL": {"countryCode":"IT", "countryName":"ITALY", "depotName":"FedEx Milano", "postcode":"20098", "town":"Sesto Ulteriano", "lat":"45.3954502", "lng":"9.2569836"}, "FMXP": {"countryCode":"IT", "countryName":"ITALY", "depotName":"FedEx Malpensa", "postcode":"21010", "town":"Aeroporto di Malpensa", "lat":"45.6239858", "lng":"8.7112367"}, "FRA": {"countryCode":"DE", "countryName":"GERMANY", "depotName":"FRANKFURT AIRPORT", "postcode":"60549", "town":"FRANKFURT MAIN", "lat":"50.0257831", "lng":"8.5852383"}, "FRT": {"countryCode":"DE", "countryName":"GERMANY", "depotName":"FRANKFURT", "postcode":"63128", "town":"DIETZENBACH", "lat":"50.0185833", "lng":"8.806224"}, "FSTN": {"countryCode":"GB", "countryName":"UNITED KINGDOM", "depotName":"Fedex Stansted", "postcode":"CM241FE", "town":"stansted", "lat":"51.8856811", "lng":"0.249826"}, "FZLX": {"countryCode":"GB", "countryName":"UNITED KINGDOM", "depotName":"FedEx Marston Gate", "postcode":"MK43 0YL", "town":"Ridgmont", "lat":"52.0328197", "lng":"-0.5902515"}, "GI3": {"countryCode":"GB", "countryName":"UNITED KINGDOM", "depotName":"FASHION HUB LEICESTER", "postcode":"LE3 8DX", "town":"LEICESTER", "lat":"52.6520953", "lng":"-1.208929"}, "GIL2": {"countryCode":"SK", "countryName":"SLOVAKIA", "depotName":"Samsung DC Gan", "postcode":"924 01", "town":"Gan", "lat":"48.23014", "lng":"17.72159"}, "GMHD": {"countryCode":"HU", "countryName":"HUNGARY", "depotName":"Grundfos HU Distribution Centr", "postcode":"2051", "town":"Biatorbagy", "lat":"47.4729924", "lng":"18.8652115"}, "GMHX": {"countryCode":"HU", "countryName":"HUNGARY", "depotName":"Grundfos HU XDock", "postcode":"2051", "town":"Biatorbagy", "lat":"47.4754469", "lng":"18.843922"}, "GNM1": {"countryCode":"HU", "countryName":"HUNGARY", "depotName":"General Motors HU", "postcode":"2040", "town":"Budaors", "lat":"47.4475487", "lng":"18.9581674"}, "GNO": {"countryCode":"FR", "countryName":"FRANCE", "depotName":"GARONOR", "postcode":"93600", "town":"AULNAY SOUS BOIS", "lat":"48.9602628", "lng":"2.4640687"}, "GOT": {"countryCode":"SE", "countryName":"SWEDEN", "depotName":"GOTHENBURG", "postcode":"438 70", "town":"LANDVETTER", "lat":"57.6722974", "lng":"12.3006212"}, "GRZ": {"countryCode":"AT", "countryName":"AUSTRIA", "depotName":"GRAZ", "postcode":"8401", "town":"KALSDORF BEI GRAZ", "lat":"46.9655965", "lng":"15.4575626"}, "GSH1": {"countryCode":"FR", "countryName":"FRANCE", "depotName":"GSH - Global Service Handling", "postcode":"93290", "town":"Tremblay en France", "lat":"48.9937", "lng":"2.5282837"}, "GVA": {"countryCode":"CH", "countryName":"SWITZERLAND", "depotName":"GENEVA", "postcode":"1215", "town":"GENEVE", "lat":"46.2340517", "lng":"6.1105029"}, "GW3": {"countryCode":"PL", "countryName":"POLAND", "depotName":"GORZOW WIELKOPOLSKI", "postcode":"66-400", "town":"GORZOW WIELKOPOLSKI", "lat":"52.74613", "lng":"15.20801"}, "HAJ": {"countryCode":"DE", "countryName":"GERMANY", "depotName":"HANNOVER AIR HUB", "postcode":"30855", "town":"LANGENHAGEN", "lat":"52.4620971", "lng":"9.6919624"}, "HAM": {"countryCode":"DE", "countryName":"GERMANY", "depotName":"HAMBURG", "postcode":"22113", "town":"HAMBURG", "lat":"53.5056116", "lng":"10.0908933"}, "HDM1": {"countryCode":"DE", "countryName":"GERMANY", "depotName":"HEIDELBERGER DRUCKMASCHINEN", "postcode":"69168", "town":"WIESLOCH", "lat":"49.2920163", "lng":"8.66033"}, "HEL": {"countryCode":"FI", "countryName":"FINLAND", "depotName":"HELSINKI", "postcode":"01530", "town":"VANTAA", "lat":"60.3107546", "lng":"24.9945042"}, "HH6": {"countryCode":"NL", "countryName":"NETHERLANDS", "depotName":"HEALTH CARE HUB", "postcode":"6429 AA", "town":"HH6 HEERLEN", "lat":"50.8538032", "lng":"6.0011219"}, "HL3": {"countryCode":"SE", "countryName":"SWEDEN", "depotName":"HELSINGBORG HUB", "postcode":"25107", "town":"HELSINGBORG", "lat":"56.0210015", "lng":"12.709025"}, "HLT1": {"countryCode":"DE", "countryName":"GERMANY", "depotName":"HILTI", "postcode":"46047", "town":"OBERHAUSEN", "lat":"51.4824864", "lng":"6.8946705"}, "HMK": {"countryCode":"DE", "countryName":"GERMANY", "depotName":"HAMMINKELN", "postcode":"46499", "town":"HAMMINKELN", "lat":"51.73356", "lng":"6.60174"}, "HNJ": {"countryCode":"DE", "countryName":"GERMANY", "depotName":"HANNOVER ROAD HUB", "postcode":"30855", "town":"LANGENHAGEN", "lat":"52.4621148", "lng":"9.6920119"}, "HOL3": {"countryCode":"GB", "countryName":"UNITED KINGDOM", "depotName":"Swaplocation Holyhead", "postcode":"LL65 1DR", "town":"Holyhead", "lat":"53.3148315", "lng":"-4.6258676"}, "ICM": {"countryCode":"IT", "countryName":"ITALY", "depotName":"COMO", "postcode":"22070", "town":"GRANDATE", "lat":"45.7742096", "lng":"9.0478432"}, "IEV": {"countryCode":"UA", "countryName":"UKRAINE", "depotName":"KIEV", "postcode":"08324", "town":"GORA", "lat":"50.3921665", "lng":"30.7888588"}, "IMI1": {"countryCode":"DE", "countryName":"GERMANY", "depotName":"IMI Norgren", "postcode":"46519", "town":"Alpen", "lat":"51.582526", "lng":"6.5171118"}, "INN": {"countryCode":"AT", "countryName":"AUSTRIA", "depotName":"INNSBRUCK", "postcode":"6305", "town":"WORGL", "lat":"47.48587", "lng":"12.10996"}, "INN3": {"countryCode":"HU", "countryName":"HUNGARY", "depotName":"TNT Innight Hungary", "postcode":"2046", "town":"Törökbálint", "lat":"47.4462996", "lng":"18.9264098"}, "ITC": {"countryCode":"IT", "countryName":"ITALY", "depotName":"TRIESTE", "postcode":"34010", "town":"SCONIGO", "lat":"45.7326693", "lng":"13.7478787"}, "JAJ1": {"countryCode":"BE", "countryName":"BELGIUM", "depotName":"Johnson & Johnson", "postcode":"6180", "town":"Courcelles", "lat":"50.4756687", "lng":"4.3649616"}, "JAJ2": {"countryCode":"BE", "countryName":"BELGIUM", "depotName":"J&J GMED LA LOUVIERE", "postcode":"7110", "town":"La Louviere", "lat":"50.50173", "lng":"4.16779"}, "KBZ": {"countryCode":"DE", "countryName":"GERMANY", "depotName":"KOBLENZ", "postcode":"56220", "town":"URMITZ", "lat":"50.3981768", "lng":"7.5286152"}, "KG4": {"countryCode":"GB", "countryName":"UNITED KINGDOM", "depotName":"KINGSBURY - PDC", "postcode":"B78 2EX", "town":"TAMWORTH", "lat":"52.5817024", "lng":"-1.6579616"}, "KIS1": {"countryCode":"BE", "countryName":"BELGIUM", "depotName":"Knauf Insulation Sprl", "postcode":"4600", "town":"4600 Vise", "lat":"50.7466279", "lng":"5.7035544"}, "KIV": {"countryCode":"MD", "countryName":"MOLDOVA, REPUBLIC OF", "depotName":"KISHINEV", "postcode":"MD-2012", "town":"KISHINEV", "lat":"47.0164064", "lng":"28.8668308"}, "KLE": {"countryCode":"DE", "countryName":"GERMANY", "depotName":"KASSEL", "postcode":"34123", "town":"KASSEL", "lat":"51.2703562", "lng":"9.5115625"}, "KLU": {"countryCode":"AT", "countryName":"AUSTRIA", "depotName":"KLAGENFURT", "postcode":"9020", "town":"KLAGENFURT", "lat":"46.6104521", "lng":"14.3297348"}, "KOR": {"countryCode":"BE", "countryName":"BELGIUM", "depotName":"KORTRIJK", "postcode":"9870", "town":"ZULTE", "lat":"50.9022102", "lng":"3.4666246"}, "KSC": {"countryCode":"SK", "countryName":"SLOVAKIA", "depotName":"KOSICE", "postcode":"040 17", "town":"KOSICE", "lat":"48.666251", "lng":"21.241379"}, "KT4": {"countryCode":"PL", "countryName":"POLAND", "depotName":"KATOWICE DEPOT", "postcode":"40-155", "town":"KATOWICE", "lat":"50.2831806", "lng":"19.02783"}, "KTW": {"countryCode":"PL", "countryName":"POLAND", "depotName":"KATOWICE", "postcode":"42-625", "town":"KATOWICE", "lat":"50.4696487", "lng":"19.0742518"}, "KUN": {"countryCode":"LT", "countryName":"LITHUANIA", "depotName":"KAUNAS", "postcode":"LT-54459", "town":"KARMELAVA  KAUNO RAJ", "lat":"54.9725249", "lng":"24.0764801"}, "LD2": {"countryCode":"NL", "countryName":"NETHERLANDS", "depotName":"DELFT", "postcode":"2627 BA", "town":"DELFT", "lat":"51.9849136", "lng":"4.3716066"}, "LED": {"countryCode":"RU", "countryName":"RUSSIAN FEDERATION", "depotName":"ST  PETERSBURG", "postcode":"192241", "town":"ST  PETERSBURG", "lat":"59.8594217", "lng":"30.4204543"}, "LGE": {"countryCode":"BE", "countryName":"BELGIUM", "depotName":"LIEGE", "postcode":"4041", "town":"MILMORT", "lat":"50.69436", "lng":"5.58607"}, "LGG": {"countryCode":"BE", "countryName":"BELGIUM", "depotName":"LIEGE EURO HUB", "postcode":"4460", "town":"GRACE-HOLLOGNE", "lat":"50.6418633", "lng":"5.4617619"}, "LGO1": {"countryCode":"CZ", "countryName":"CZECH REPUBLIC", "depotName":"Lego Production s.r.o EDC", "postcode":"25009", "town":"Jirny", "lat":"50.1261964", "lng":"14.6976698"}, "LHR": {"countryCode":"GB", "countryName":"UNITED KINGDOM", "depotName":"LONDON HEATHROW AIR HUB", "postcode":"TW5 9NW", "town":"MIDDLESEX", "lat":"51.4909941", "lng":"-0.3990141"}, "LIL": {"countryCode":"FR", "countryName":"FRANCE", "depotName":"LILLE INTERNATIONAL", "postcode":"59810", "town":"LESQUIN", "lat":"50.5716083", "lng":"3.1154112"}, "LIN": {"countryCode":"IT", "countryName":"ITALY", "depotName":"LINATE AIRPORT", "postcode":"20100", "town":"MILANO", "lat":"45.455157", "lng":"9.2826684"}, "LIS": {"countryCode":"PT", "countryName":"PORTUGAL", "depotName":"LISBON", "postcode":"1749-104", "town":"LISBOA", "lat":"38.7754688", "lng":"-9.1261278"}, "LJ1": {"countryCode":"SI", "countryName":"SLOVENIA", "depotName":"LJUBLJANA DEPOT", "postcode":"1000", "town":"LJUBLJANA", "lat":"46.0682549", "lng":"14.5444055"}, "LJU": {"countryCode":"SI", "countryName":"SLOVENIA", "depotName":"LETALISCE JOZETA PUCNIKA (LJU)", "postcode":"4210", "town":"BRNIK", "lat":"46.2297135", "lng":"14.4580929"}, "LNZ": {"countryCode":"AT", "countryName":"AUSTRIA", "depotName":"LINZ", "postcode":"4490", "town":"ST FLORIAN", "lat":"48.2241098", "lng":"14.394006"}, "LPZ": {"countryCode":"DE", "countryName":"GERMANY", "depotName":"LEIPZIG", "postcode":"04509", "town":"LEIPZIG", "lat":"51.4708613", "lng":"12.2128575"}, "LTA": {"countryCode":"AT", "countryName":"AUSTRIA", "depotName":"HOERBRANZ", "postcode":"6912", "town":"HOERBRANZ", "lat":"47.5506242", "lng":"9.7419341"}, "LUD1": {"countryCode":"DE", "countryName":"GERMANY", "depotName":"LUDDEKE", "postcode":"40789", "town":"MONHEIM", "lat":"51.1127121", "lng":"6.8881568"}, "LUG": {"countryCode":"CH", "countryName":"SWITZERLAND", "depotName":"LUGANO", "postcode":"6828", "town":"BALERNA", "lat":"45.8381524", "lng":"9.0042308"}, "LUX": {"countryCode":"LU", "countryName":"LUXEMBOURG", "depotName":"LUXEMBOURG", "postcode":"3290", "town":"BETTEMBOURG", "lat":"49.5055172", "lng":"6.1140405"}, "LUX2": {"countryCode":"LU", "countryName":"LUXEMBOURG", "depotName":"LUX A/P COMM. UPLIFT", "postcode":"6962", "town":"LUXEMBOURG AIRPORT", "lat":"49.6365134", "lng":"6.2373626"}, "LYS": {"countryCode":"FR", "countryName":"FRANCE", "depotName":"LYON", "postcode":"69780", "town":"MIONS", "lat":"45.675971", "lng":"4.9676152"}, "MAD": {"countryCode":"ES", "countryName":"SPAIN", "depotName":"MADRID", "postcode":"28830", "town":"SAN FERNANDO DE HENARES", "lat":"40.444544", "lng":"-3.506241"}, "MB3": {"countryCode":"SI", "countryName":"SLOVENIA", "depotName":"MARIBOR", "postcode":"2311", "town":"HOCE", "lat":"46.497705", "lng":"15.6551526"}, "MED5": {"countryCode":"CH", "countryName":"SWITZERLAND", "depotName":"Medtronic Suisse", "postcode":"1131", "town":"Tolochenaz", "lat":"46.5008771", "lng":"6.4822875"}, "MHN": {"countryCode":"DE", "countryName":"GERMANY", "depotName":"MANNHEIM", "postcode":"68219", "town":"MANNHEIM", "lat":"49.421413", "lng":"8.5119608"}, "MI6": {"countryCode":"IT", "countryName":"ITALY", "depotName":"MILAN INTL ROAD HUB", "postcode":"20068", "town":"PESCHIERA BORROMEO", "lat":"45.4375699", "lng":"9.3043105"}, "ML1": {"countryCode":"FR", "countryName":"FRANCE", "depotName":"MULHOUSE INTERNATIONAL", "postcode":"68310", "town":"WITTELSHEIM", "lat":"47.78183", "lng":"7.22999"}, "MLA": {"countryCode":"MT", "countryName":"MALTA", "depotName":"MALTA", "postcode":"LQA 1540", "town":"LUQA  MALTA", "lat":"35.8649651", "lng":"14.4897117"}, "MMA": {"countryCode":"SE", "countryName":"SWEDEN", "depotName":"MALMO DEPOT", "postcode":"23032", "town":"STURUP", "lat":"55.5376951", "lng":"13.3635369"}, "MOW": {"countryCode":"RU", "countryName":"RUSSIAN FEDERATION", "depotName":"MOSCOW", "postcode":"123458", "town":"MOSCOW", "lat":"55.7885101", "lng":"37.3970579"}, "MPL": {"countryCode":"FR", "countryName":"FRANCE", "depotName":"MONTPELLIER INTERNATIONAL", "postcode":"34130", "town":"MAUGUIO", "lat":"43.5968776", "lng":"3.9572507"}, "MRS": {"countryCode":"FR", "countryName":"FRANCE", "depotName":"MARSEILLE INTERNATIONAL", "postcode":"13700", "town":"MARIGNANE", "lat":"43.4412674", "lng":"5.2209394"}, "MSQ": {"countryCode":"BY", "countryName":"BELARUS", "depotName":"MINSK", "postcode":"220073", "town":"MINSK", "lat":"53.9066197", "lng":"27.5915295"}, "MUC": {"countryCode":"DE", "countryName":"GERMANY", "depotName":"MUNICH AIR HUB", "postcode":"85356", "town":"MUENCHEN", "lat":"48.3510236", "lng":"11.7725554"}, "MUT0": {"countryCode":"BE", "countryName":"BELGIUM", "depotName":"MUTOH EUROPE NV", "postcode":"8400", "town":"Oostende", "lat":"51.2118961", "lng":"2.9402567"}, "MV9": {"countryCode":"FR", "countryName":"FRANCE", "depotName":"MARLY LA VILLE HUB", "postcode":"95670", "town":"MARLY LA VILLE", "lat":"49.0905499", "lng":"2.5243692"}, "NCE": {"countryCode":"FR", "countryName":"FRANCE", "depotName":"NICE INTERNATIONAL", "postcode":"06200", "town":"NICE", "lat":"43.7125124", "lng":"7.2043654"}, "NUE": {"countryCode":"DE", "countryName":"GERMANY", "depotName":"NUERNBERG AIRPORT", "postcode":"90411", "town":"NUERNBERG", "lat":"49.49274", "lng":"11.08736"}, "NW7": {"countryCode":"NL", "countryName":"NETHERLANDS", "depotName":"NIEUWEGEIN", "postcode":"3439 LC", "town":"NIEUWEGEIN", "lat":"52.0509328", "lng":"5.1115016"}, "OPO": {"countryCode":"PT", "countryName":"PORTUGAL", "depotName":"PORTO", "postcode":"4470-573", "town":"MOREIRA DA MAIA", "lat":"41.23264", "lng":"-8.6656529"}, "OPT1": {"countryCode":"DE", "countryName":"GERMANY", "depotName":"Optimed", "postcode":"DE-76275", "town":"Ettlingen", "lat":"48.935944", "lng":"8.3833118"}, "ORAC": {"countryCode":"BE", "countryName":"BELGIUM", "depotName":"ORAC DECOR", "postcode":"8400", "town":"Oostende", "lat":"51.218815", "lng":"2.9594379"}, "ORB": {"countryCode":"SE", "countryName":"SWEDEN", "depotName":"OREBRO", "postcode":"705 94", "town":"OREBRO", "lat":"59.2277333", "lng":"15.0470636"}, "ORE": {"countryCode":"FR", "countryName":"FRANCE", "depotName":"ORLEANS INTERNATIONAL", "postcode":"45140", "town":"ORMES", "lat":"47.938223", "lng":"1.8325329"}, "OSL": {"countryCode":"NO", "countryName":"NORWAY", "depotName":"OSLO", "postcode":"2000", "town":"LILLESTROM", "lat":"59.967633", "lng":"11.0722186"}, "OSR": {"countryCode":"CZ", "countryName":"CZECH REPUBLIC", "depotName":"OSTRAVA", "postcode":"709 00", "town":"OSTRAVA", "lat":"49.83918", "lng":"18.28816"}, "PAR9": {"countryCode":"BE", "countryName":"BELGIUM", "depotName":"Johnson&Johnson / Janssen", "postcode":"2340", "town":"Beerse", "lat":"51.3085676", "lng":"4.8591033"}, "PD3": {"countryCode":"IT", "countryName":"ITALY", "depotName":"PIACENZA DOMESTIC HUB", "postcode":"29100", "town":"PIACENZA", "lat":"45.0507351", "lng":"9.7407424"}, "PEN1": {"countryCode":"NL", "countryName":"NETHERLANDS", "depotName":"PERKIN ELMER NEDERLAND B.V.", "postcode":"9723 TH", "town":"GRONINGEN", "lat":"53.2081116", "lng":"6.6109141"}, "PFS1": {"countryCode":"BE", "countryName":"BELGIUM", "depotName":"PFSwebBVBA", "postcode":"4460", "town":"Grace Hollogne", "lat":"50.65596", "lng":"5.47754"}, "PHF1": {"countryCode":"DE", "countryName":"GERMANY", "depotName":"Parker Hannifin", "postcode":"33719", "town":"Bielefeld", "lat":"52.0156924", "lng":"8.5880631"}, "POZ": {"countryCode":"PL", "countryName":"POLAND", "depotName":"POZNAN", "postcode":"61-315", "town":"POZNAN", "lat":"52.3631551", "lng":"16.9886308"}, "PRG": {"countryCode":"CZ", "countryName":"CZECH REPUBLIC", "depotName":"PRAGUE", "postcode":"252 19", "town":"CHRASTANY", "lat":"50.0393911", "lng":"14.2476227"}, "PRN": {"countryCode":"XK", "countryName":"KOSOVO", "depotName":"PRISTINA", "postcode":"38000", "town":"PRISHTINE", "lat":"42.6479208", "lng":"21.113473"}, "PROM": {"countryCode":"DE", "countryName":"GERMANY", "depotName":"Promega", "postcode":"68199", "town":"Mannheim", "lat":"49.4611093", "lng":"8.4997499"}, "PUT1": {"countryCode":"DE", "countryName":"GERMANY", "depotName":"Swap Location Puttgarden", "postcode":"23769", "town":"Fehmarn", "lat":"54.5020804", "lng":"11.2295937"}, "QAR": {"countryCode":"NL", "countryName":"NETHERLANDS", "depotName":"ARNHEM HUB", "postcode":"6921 RB", "town":"DUIVEN", "lat":"51.96532", "lng":"6.02063"}, "QDU": {"countryCode":"DE", "countryName":"GERMANY", "depotName":"NEUSS", "postcode":"41460", "town":"NEUSS", "lat":"51.2223963", "lng":"6.7038185"}, "QFC": {"countryCode":"FR", "countryName":"FRANCE", "depotName":"CRETEIL", "postcode":"94000", "town":"CRETEIL", "lat":"48.7766281", "lng":"2.42845"}, "QPA": {"countryCode":"IT", "countryName":"ITALY", "depotName":"PADOVA", "postcode":"35100", "town":"PADOVA", "lat":"45.3838787", "lng":"11.9214911"}, "REI1": {"countryCode":"DE", "countryName":"GERMANY", "depotName":"SWAP LOCATION INGOLSTADT", "postcode":"85084", "town":"85084 REICHERTSHOFEN", "lat":"48.6431481", "lng":"11.5197359"}, "RH3": {"countryCode":"FR", "countryName":"FRANCE", "depotName":"REIMS INTERNATIONAL", "postcode":"51689", "town":"REIMS", "lat":"49.2203", "lng":"4.11273"}, "RIX": {"countryCode":"LV", "countryName":"LATVIA", "depotName":"RIGA", "postcode":"LV-2167", "town":"MARUPE", "lat":"56.8959145", "lng":"24.0456287"}, "RNS": {"countryCode":"FR", "countryName":"FRANCE", "depotName":"RENNES INTERNATIONAL", "postcode":"35116", "town":"SAINT JACQUES DE LA LANDE", "lat":"48.0752085", "lng":"-1.7321963"}, "RO5": {"countryCode":"BG", "countryName":"BULGARIA", "depotName":"ROUSSE", "postcode":"7012", "town":"ROUSSE", "lat":"43.8417951", "lng":"25.9537709"}, "RTM": {"countryCode":"NL", "countryName":"NETHERLANDS", "depotName":"ROTTERDAM MAIN DEPOT", "postcode":"3316 LN", "town":"DORDRECHT", "lat":"51.7625429", "lng":"4.631785"}, "SBG": {"countryCode":"DE", "countryName":"GERMANY", "depotName":"STRAUBING", "postcode":"94377", "town":"STEINACH", "lat":"48.9463975", "lng":"12.6172733"}, "SCB1": {"countryCode":"DE", "countryName":"GERMANY", "depotName":"Schmitz Cargobull AG", "postcode":"48691", "town":"Vreden", "lat":"52.02482", "lng":"6.8267"}, "SCN": {"countryCode":"DE", "countryName":"GERMANY", "depotName":"SAARBRUECKEN", "postcode":"66386", "town":"ST  INGBERT", "lat":"49.2723773", "lng":"7.1009771"}, "SED1": {"countryCode":"NL", "countryName":"NETHERLANDS", "depotName":"Sensormatic European Distribut", "postcode":"6101", "town":"Echt", "lat":"51.1161838", "lng":"5.8841783"}, "SET1": {"countryCode":"DE", "countryName":"GERMANY", "depotName":"SWAP POINT SAUER", "postcode":"92726", "town":"WAIDHAUS", "lat":"49.6524203", "lng":"12.5108227"}, "SGE": {"countryCode":"DE", "countryName":"GERMANY", "depotName":"SIEGEN", "postcode":"57234", "town":"WILNSDORF", "lat":"50.824168", "lng":"8.0783316"}, "SJJ": {"countryCode":"BA", "countryName":"BOSNIA AND HERZEGOVINA", "depotName":"SARAJEVO", "postcode":"71000", "town":"SARAJEVO", "lat":"43.85099", "lng":"18.36918"}, "SKG": {"countryCode":"GR", "countryName":"GREECE", "depotName":"THESSALONIKI", "postcode":"570 01", "town":"THESSALONIKI", "lat":"40.64129", "lng":"22.93352"}, "SKP": {"countryCode":"MK", "countryName":"MACEDONIA, THE FORMER YUGOSLAV", "depotName":"SKOPJE", "postcode":"1000", "town":"SKOPJE", "lat":"41.9843974", "lng":"21.4547905"}, "SLS1": {"countryCode":"FR", "countryName":"FRANCE", "depotName":"Swap Location Eurotunnel", "postcode":"62904", "town":"coquelles Cedex", "lat":"50.9263073", "lng":"1.8084758"}, "SLT2": {"countryCode":"HU", "countryName":"HUNGARY", "depotName":"Swaplocation Transemex KFT", "postcode":"2330", "town":"Dunaharaszti", "lat":"47.3578313", "lng":"19.1203501"}, "SMC5": {"countryCode":"BE", "countryName":"BELGIUM", "depotName":"SMC PNEUMATIC", "postcode":"2160", "town":"WOMMELGEM", "lat":"51.2103751", "lng":"4.5085619"}, "SN5": {"countryCode":"FR", "countryName":"FRANCE", "depotName":"GENAS", "postcode":"69740", "town":"GENAS", "lat":"45.72024", "lng":"4.98668"}, "SOF": {"countryCode":"BG", "countryName":"BULGARIA", "depotName":"SOFIA", "postcode":"1574", "town":"SOFIA", "lat":"42.69499", "lng":"23.32111"}, "SON1": {"countryCode":"CZ", "countryName":"CZECH REPUBLIC", "depotName":"Sony DADC CZ s.r.o.", "postcode":"33209", "town":"Stenovice", "lat":"49.6817287", "lng":"13.4195372"}, "SP8": {"countryCode":"NL", "countryName":"NETHERLANDS", "depotName":"AMSTERDAM DEPOT", "postcode":"1119NT", "town":"SCHIPHOL-RIJK", "lat":"52.2788386", "lng":"4.7652327"}, "STN": {"countryCode":"GB", "countryName":"UNITED KINGDOM", "depotName":"STANSTED AIR HUB", "postcode":"CM24 1QJ", "town":"ESSEX", "lat":"51.8872969", "lng":"0.2490494"}, "STO": {"countryCode":"SE", "countryName":"SWEDEN", "depotName":"STOCKHOLM", "postcode":"194 43", "town":"UPPLANDS VASBY", "lat":"59.5053672", "lng":"17.8895528"}, "SXB": {"countryCode":"FR", "countryName":"FRANCE", "depotName":"STRASBOURG INTERNATIONAL", "postcode":"67118", "town":"GEISPOLSHEIM GARE", "lat":"48.5368793", "lng":"7.678331"}, "SZG": {"countryCode":"AT", "countryName":"AUSTRIA", "depotName":"SALZBURG", "postcode":"5101", "town":"BERGHEIM", "lat":"47.8627742", "lng":"13.0062026"}, "SZZ": {"countryCode":"PL", "countryName":"POLAND", "depotName":"SZCZECIN", "postcode":"70-893", "town":"SZCZECIN", "lat":"53.3789", "lng":"14.69222"}, "TBS": {"countryCode":"GE", "countryName":"GEORGIA", "depotName":"TBILISI", "postcode":"0178", "town":"TBILISI", "lat":"41.6696592", "lng":"44.9631649"}, "TGD": {"countryCode":"ME", "countryName":"MONTENEGRO", "depotName":"PODGORICA", "postcode":"81000", "town":"PODGORICA", "lat":"42.4386394", "lng":"19.265846"}, "TIA": {"countryCode":"AL", "countryName":"ALBANIA", "depotName":"TIRANA", "postcode":"", "town":"TIRANA", "lat":"41.3343892", "lng":"19.8070857"}, "TIM3": {"countryCode":"DE", "countryName":"GERMANY", "depotName":"Time Matters", "postcode":"60549", "town":"Frankfurt am Main", "lat":"50.0385929", "lng":"8.5257357"}, "TKU": {"countryCode":"FI", "countryName":"FINLAND", "depotName":"TURKU", "postcode":"20360", "town":"TURKU", "lat":"60.50859", "lng":"22.26686"}, "TLL": {"countryCode":"EE", "countryName":"ESTONIA", "depotName":"TALLINN", "postcode":"11415", "town":"TALLINN", "lat":"59.4189287", "lng":"24.8109127"}, "TSR": {"countryCode":"RO", "countryName":"ROMANIA", "depotName":"TIMISOARA", "postcode":"307200", "town":"GHIRODA", "lat":"45.7874352", "lng":"21.316719"}, "TVH1": {"countryCode":"BE", "countryName":"BELGIUM", "depotName":"TVH FORKLIFT PLANT W", "postcode":"8790", "town":"Waregem", "lat":"50.8608302", "lng":"3.4190767"}, "TVH2": {"countryCode":"BE", "countryName":"BELGIUM", "depotName":"TVH FORKLIFT PLANT S", "postcode":"8790", "town":"Waregem", "lat":"50.8592575", "lng":"3.397224"}, "TYC9": {"countryCode":"CZ", "countryName":"CZECH REPUBLIC", "depotName":"Tyco Fire & Security CZ S.R.O.", "postcode":"67902", "town":"Rajecko", "lat":"49.3950993", "lng":"16.6422192"}, "ULM": {"countryCode":"DE", "countryName":"GERMANY", "depotName":"ULM", "postcode":"89231", "town":"NEU-ULM", "lat":"48.3910317", "lng":"10.044261"}, "URO": {"countryCode":"FR", "countryName":"FRANCE", "depotName":"ROUEN INTERNATIONAL", "postcode":"76800", "town":"ST ETIENNE DU ROUVRAY", "lat":"49.3855542", "lng":"1.1124538"}, "VCE": {"countryCode":"IT", "countryName":"ITALY", "depotName":"VENEZIA AIRPORT", "postcode":"30020", "town":"MARCON", "lat":"45.5471566", "lng":"12.290987"}, "VEU1": {"countryCode":"BE", "countryName":"BELGIUM", "depotName":"Swap location Veurne", "postcode":"8630", "town":"Veurne", "lat":"51.0641913", "lng":"2.6770456"}, "VFI1": {"countryCode":"CZ", "countryName":"CZECH REPUBLIC", "depotName":"VF International", "postcode":"25066", "town":"Zdiby", "lat":"50.1754537", "lng":"14.4487016"}, "VGN": {"countryCode":"DE", "countryName":"GERMANY", "depotName":"VILLINGEN-SCHWENNINGEN", "postcode":"78652", "town":"DEISSLINGEN", "lat":"48.1053973", "lng":"8.6001492"}, "VGO": {"countryCode":"ES", "countryName":"SPAIN", "depotName":"VIGO", "postcode":"36400", "town":"MOS", "lat":"42.2028173", "lng":"-8.6503096"}, "VIE": {"countryCode":"AT", "countryName":"AUSTRIA", "depotName":"VIENNA", "postcode":"1300", "town":"WIEN", "lat":"48.1272729", "lng":"16.5516415"}, "VLC": {"countryCode":"ES", "countryName":"SPAIN", "depotName":"VALENCIA", "postcode":"46210", "town":"PICANYA", "lat":"39.4420801", "lng":"-0.4260755"}, "VNO": {"countryCode":"LT", "countryName":"LITHUANIA", "depotName":"VILNIUS", "postcode":"LT-02189", "town":"VILNIUS", "lat":"54.6629378", "lng":"25.2734061"}, "WA1": {"countryCode":"PL", "countryName":"POLAND", "depotName":"WYPEDY ROAD HUB", "postcode":"05-090", "town":"WYPEDY", "lat":"52.1452712", "lng":"20.8857625"}, "WAW": {"countryCode":"PL", "countryName":"POLAND", "depotName":"WARSAW", "postcode":"05-090", "town":"WYPEDY", "lat":"52.14434", "lng":"20.88557"}, "WFS1": {"countryCode":"FR", "countryName":"FRANCE", "depotName":"WFS (Handling agent for AA)", "postcode":"FR-95706", "town":"Roissy", "lat":"49.0074648", "lng":"2.5381474"}, "WFSL": {"countryCode":"FR", "countryName":"FRANCE", "depotName":"WFS LXS", "postcode":"69125", "town":"Lyon Saint-Exupéry", "lat":"45.72282", "lng":"5.08541"}, "WIN1": {"countryCode":"FR", "countryName":"FRANCE", "depotName":"Wincanton / Rhenus Logistics", "postcode":"FR-67000", "town":"Strasbourg", "lat":"48.5689088", "lng":"7.7889442"}, "WRO": {"countryCode":"PL", "countryName":"POLAND", "depotName":"WROCLAW", "postcode":"55-095", "town":"DLUGOLEKA", "lat":"51.1351916", "lng":"17.0800506"}, "XCP": {"countryCode":"FR", "countryName":"FRANCE", "depotName":"COMPIEGNE INTERNATIONAL", "postcode":"60880", "town":"LE MEUX", "lat":"49.3549601", "lng":"2.7580021"}, "ZA6": {"countryCode":"SK", "countryName":"SLOVAKIA", "depotName":"ZILINA", "postcode":"01001", "town":"ZILINA", "lat":"49.21684", "lng":"18.72739"}, "ZAG": {"countryCode":"HR", "countryName":"CROATIA", "depotName":"ZAGREB", "postcode":"10020", "town":"NOVI ZAGREB", "lat":"45.7629575", "lng":"15.9724381"}, "ZAZ": {"countryCode":"ES", "countryName":"SPAIN", "depotName":"ZARAGOZA", "postcode":"50820", "town":"SAN JUAN DE MOZARRIFAR", "lat":"41.7198914", "lng":"-0.8512864"}, "ZMU": {"countryCode":"DE", "countryName":"GERMANY", "depotName":"MUNICH", "postcode":"85399", "town":"HALLBERGMOOS", "lat":"48.33391", "lng":"11.73383"}, "ZRH": {"countryCode":"CH", "countryName":"SWITZERLAND", "depotName":"ZURICH", "postcode":"5033", "town":"BUCHS", "lat":"47.3933019", "lng":"8.0698667"}, "ZWO": {"countryCode":"NL", "countryName":"NETHERLANDS", "depotName":"ZWOLLE", "postcode":"8028 PK", "town":"ZWOLLE", "lat":"52.5337926", "lng":"6.1716767"}, "ZWS": {"countryCode":"DE", "countryName":"GERMANY", "depotName":"KORNTAL MUENCHINGEN", "postcode":"70825", "town":"KORNTAL-MUENCHINGEN", "lat":"48.8492702", "lng":"9.1150338"}}'>-->
+            <input type="hidden" id="hidHubs" value='{"51A": {"countryCode":"FR", "countryName":"FRANCE", "depotName":"REIMS", "postcode":"51689", "town":"REIMS", "ad1":"28 RUE DU VAL CLAIR", "ad2":"", "ad3":"", "lat":"49.2203", "lng":"4.11273"}, "59A": {"countryCode":"FR", "countryName":"FRANCE", "depotName":"LILLE", "postcode":"59810", "town":"LESQUIN", "ad1":"2 RUE MARYSE BASTIE", "ad2":"", "ad3":"", "lat":"50.5766028", "lng":"3.1118724"}, "67A": {"countryCode":"FR", "countryName":"FRANCE", "depotName":"STRASBOURG", "postcode":"67118", "town":"GEISPOLSHEIM", "ad1":"RUE DES IMPRIMEURS", "ad2":"", "ad3":"", "lat":"48.53688", "lng":"7.6784"}, "93A": {"countryCode":"FR", "countryName":"FRANCE", "depotName":"TREMBLAY", "postcode":"93290", "town":"TREMBLAY EN FRANCE", "ad1":"1 AVENUE DU VALQUIOU", "ad2":"", "ad3":"", "lat":"48.9798741", "lng":"2.5382765"}, "94A": {"countryCode":"FR", "countryName":"FRANCE", "depotName":"ALFORTVILLE", "postcode":"94140", "town":"ALFORTVILLE", "ad1":"13 ALLEE JEAN BAPTISTE PREUX", "ad2":"", "ad3":"", "lat":"48.7785526", "lng":"2.4267339"}, "ABRU": {"countryCode":"BE", "countryName":"BELGIUM", "depotName":"ABRU - BRUSSELS AIRPORT", "postcode":"1931", "town":"MACHELEN", "ad1":"BRUCARGO 1", "ad2":"", "ad3":"", "lat":"50.9041989", "lng":"4.4511338"}, "AE4": {"countryCode":"GB", "countryName":"UNITED KINGDOM", "depotName":"Atherstone - Parcel Distribution Centre", "postcode":"CV9 2RY", "town":"Warwickshire", "ad1":"TNT Express House", "ad2":"Holly Lane", "ad3":"Atherstone", "lat":"52.5841575", "lng":"-1.5591315"}, "AMS": {"countryCode":"NL", "countryName":"NETHERLANDS", "depotName":"GLOBAL TRANSIT HUB", "postcode":"1438 AN", "town":"OUDE MEER", "ad1":"FOKKERWEG 300", "ad2":"", "ad3":"", "lat":"52.293926", "lng":"4.7883848"}, "ANR": {"countryCode":"BE", "countryName":"BELGIUM", "depotName":"ANTWERP", "postcode":"2850", "town":"BOOM", "ad1":"INDUSTRIEZONE KREKELENBERG", "ad2":"", "ad3":"", "lat":"51.0977989", "lng":"4.3603937"}, "ARH": {"countryCode":"NL", "countryName":"NETHERLANDS", "depotName":"ARNHEM", "postcode":"6921 RG", "town":"DUIVEN", "ad1":"EFFECT 9", "ad2":"", "ad3":"", "lat":"51.9671719", "lng":"6.013392"}, "ATH": {"countryCode":"GR", "countryName":"GREECE", "depotName":"ATHENS", "postcode":"190 03", "town":"MARKOPOULO", "ad1":"FLEMING ROAD", "ad2":"", "ad3":"", "lat":"37.9397445", "lng":"23.9484174"}, "AVT3": {"countryCode":"NL", "countryName":"NETHERLANDS", "depotName":"ARVATO / POSEIDON", "postcode":"6598", "town":"Heijen", "ad1":"Brem 1", "ad2":"", "ad3":"", "lat":"51.6640451", "lng":"5.9998124"}, "BCKM": {"countryCode":"CZ", "countryName":"CZECH REPUBLIC", "depotName":"Beckman Coulter", "postcode":"10227", "town":"Praha", "ad1":"Radiov� 1", "ad2":"", "ad3":"", "lat":"50.0681718", "lng":"14.5287806"}, "BCN": {"countryCode":"ES", "countryName":"SPAIN", "depotName":"BARCELONA", "postcode":"08040", "town":"BARCELONA", "ad1":"STREET A 81", "ad2":"", "ad3":"", "lat":"41.3382573", "lng":"2.1418718"}, "BDD1": {"countryCode":"BE", "countryName":"BELGIUM", "depotName":"Becton Dickinson Distribution", "postcode":"9140", "town":"Teemse", "ad1":"laagstraat 57", "ad2":"", "ad3":"", "lat":"51.1431089", "lng":"4.1921904"}, "BE7": {"countryCode":"DE", "countryName":"GERMANY", "depotName":"BERLIN", "postcode":"13627", "town":"BERLIN", "ad1":"ADAM VON TROTT STRASSE 1", "ad2":"", "ad3":"", "lat":"52.5442", "lng":"13.30874"}, "BEG": {"countryCode":"RS", "countryName":"SERBIA", "depotName":"BELGRADE", "postcode":"11070", "town":"NOVI BEOGRAD", "ad1":"AUTOPUT ZA ZAGREB 32V", "ad2":"", "ad3":"", "lat":"44.8143981", "lng":"20.4775971"}, "BEK1": {"countryCode":"CZ", "countryName":"CZECH REPUBLIC", "depotName":"Bekaert Textiles CZ s.r.o", "postcode":"352 01", "town":"As", "ad1":"Lipova 622/1", "ad2":"", "ad3":"", "lat":"50.219726", "lng":"12.1894507"}, "BER": {"countryCode":"DE", "countryName":"GERMANY", "depotName":"BERLIN BRANDENBURG AIRPORT", "postcode":"12521", "town":"BERLIN", "ad1":"EXPRESS CENTER GEBAEUDE 055", "ad2":"", "ad3":"", "lat":"52.3828091", "lng":"13.5099897"}, "BF4": {"countryCode":"GB", "countryName":"UNITED KINGDOM", "depotName":"BELFAST DEPOT", "postcode":"BT29 4TQ", "town":"CO ANTRIM", "ad1":"14 BELFAST ROAD", "ad2":"", "ad3":"", "lat":"54.70268", "lng":"-6.17082"}, "BI6": {"countryCode":"ES", "countryName":"SPAIN", "depotName":"BILBAO", "postcode":"48510", "town":"VALLE DE TRAPAGA", "ad1":"BIKAKOBO - APARKABISA", "ad2":"", "ad3":"", "lat":"43.30472", "lng":"-3.03695"}, "BIE": {"countryCode":"DE", "countryName":"GERMANY", "depotName":"BIELEFELD", "postcode":"33719", "town":"BIELEFELD", "ad1":"LUDWIG-ERHARD-ALLEE 25", "ad2":"", "ad3":"", "lat":"52.0106268", "lng":"8.6231367"}, "BLQ": {"countryCode":"IT", "countryName":"ITALY", "depotName":"BOLOGNA AIRPORT", "postcode":"40132", "town":"BOLOGNA", "ad1":"VIA DELLA SALUTE 95", "ad2":"", "ad3":"", "lat":"44.529443", "lng":"11.2869901"}, "BLL": {"countryCode":"DK", "countryName":"DENMARK", "depotName":"KOLDING", "postcode":"6000", "town":"KOLDING", "ad1":"KOKMOSE 5", "ad2":"", "ad3":"", "lat":"55.5357117", "lng":"9.4769133"}, "BO1": {"countryCode":"IT", "countryName":"ITALY", "depotName":"BOLOGNA LAME", "postcode":"40131", "town":"BOLOGNA", "ad1":"VIA CRISTOFORO COLOMBO, 59", "ad2":"", "ad3":"", "lat":"44.5411", "lng":"11.34545"}, "BOS6": {"countryCode":"PL", "countryName":"POLAND", "depotName":"BOSCH Wroclaw", "postcode":"55-040", "town":"Bielany Wroclawski", "ad1":"Magazynowa 3", "ad2":"", "ad3":"", "lat":"51.0460539", "lng":"16.9644093"}, "BRD1": {"countryCode":"BE", "countryName":"BELGIUM", "depotName":"BARD EDC", "postcode":"2250", "town":"Olen", "ad1":"Hagelberg 2", "ad2":"", "ad3":"", "lat":"51.1488493", "lng":"4.9101692"}, "BRE": {"countryCode":"DE", "countryName":"GERMANY", "depotName":"BREMEN", "postcode":"28199", "town":"BREMEN", "ad1":"GELSENKIRCHENER STRASSE 15", "ad2":"", "ad3":"", "lat":"53.0600144", "lng":"8.7730656"}, "BRQ": {"countryCode":"CZ", "countryName":"CZECH REPUBLIC", "depotName":"BRNO", "postcode":"664 42", "town":"MODRICE", "ad1":"CENTRAL TRADE PARK  CTP", "ad2":"", "ad3":"", "lat":"49.1157101", "lng":"16.6028012"}, "BRU": {"countryCode":"BE", "countryName":"BELGIUM", "depotName":"BRUSSELS", "postcode":"1830", "town":"MACHELEN", "ad1":"BEDRIJVENZONE MACHELEN CARGO", "ad2":"", "ad3":"", "lat":"50.90319", "lng":"4.45599"}, "BRW1": {"countryCode":"BE", "countryName":"BELGIUM", "depotName":"Brunswick Marine in Emea", "postcode":"4800", "town":"Verviers", "ad1":"de Petit rechain 1", "ad2":"", "ad3":"", "lat":"50.6129199", "lng":"5.832719"}, "BSA": {"countryCode":"FR", "countryName":"FRANCE", "depotName":"BESANCON INTERNATIONAL", "postcode":"25480", "town":"MISEREY SALINES", "ad1":"ZAC DE L ENCHANGEUR VALENTIN", "ad2":"", "ad3":"", "lat":"47.2807325", "lng":"5.9894097"}, "BSL": {"countryCode":"CH", "countryName":"SWITZERLAND", "depotName":"BASEL", "postcode":"4030", "town":"BASEL", "ad1":"POSTFACHBASEL AIRPORT", "ad2":"", "ad3":"", "lat":"47.6053654", "lng":"7.5245399"}, "BTS": {"countryCode":"SK", "countryName":"SLOVAKIA", "depotName":"BRATISLAVA", "postcode":"830 06", "town":"BRATISLAVA", "ad1":"PRI STAROM LETISKU 14", "ad2":"", "ad3":"", "lat":"48.198863", "lng":"17.196608"}, "BUD": {"countryCode":"HU", "countryName":"HUNGARY", "depotName":"BUDAPEST", "postcode":"1185", "town":"BUDAPEST", "ad1":"BUD INTERNATIONAL AIRPORT", "ad2":"", "ad3":"", "lat":"47.4404931", "lng":"19.2232116"}, "BUH": {"countryCode":"RO", "countryName":"ROMANIA", "depotName":"BUCHAREST", "postcode":"075100", "town":"OTOPENI", "ad1":"49, AUREL VLAICU STREET", "ad2":"", "ad3":"", "lat":"44.578718", "lng":"26.0841706"}, "BZQ": {"countryCode":"BE", "countryName":"BELGIUM", "depotName":"BRUSSELS HUB", "postcode":"1830", "town":"MACHELEN", "ad1":"BEDRIJVENZONE MACHELEN CARGO", "ad2":"", "ad3":"", "lat":"50.90319", "lng":"4.45599"}, "C5H": {"countryCode":"FR", "countryName":"FRANCE", "depotName":"CHARLES DE GAULLE HUB CDGH", "postcode":"95700", "town":"ROISSY CHARLES DE GAULLE CEDE", "ad1":"ROUTE DE L ARPENTEUR", "ad2":"", "ad3":"", "lat":"49.0062251", "lng":"2.5072045"}, "C9H": {"countryCode":"DE", "countryName":"GERMANY", "depotName":"COLOGNE HUB", "postcode":"51147", "town":"KOELN", "ad1":"HEINRICH STEINMANN STR", "ad2":"", "ad3":"", "lat":"50.873557", "lng":"7.127388"}, "C9R": {"countryCode":"DE", "countryName":"GERMANY", "depotName":"COLOGNE RAMP CGNR", "postcode":"51147", "town":"KOELN", "ad1":"HEINRICH-STEINMANN-STRASSE", "ad2":"", "ad3":"", "lat":"50.8739457", "lng":"7.1281431"}, "CBP": {"countryCode":"PT", "countryName":"PORTUGAL", "depotName":"COIMBRA", "postcode":"3045-504", "town":"TAVEIRO", "ad1":"MERCADO ABASTECEDOR DA", "ad2":"", "ad3":"", "lat":"40.229054", "lng":"-8.4369848"}, "CC8": {"countryCode":"TR", "countryName":"TURKEY", "depotName":"CATALCA", "postcode":"34537", "town":"ISTANBUL", "ad1":"CATALCA GUMRUGU", "ad2":"", "ad3":"", "lat":"41.0768426", "lng":"28.5062254"}, "CD3": {"countryCode":"FR", "countryName":"FRANCE", "depotName":"ROISSY DOMESTIC CDG", "postcode":"95700", "town":"AEROPORT ROISSY CHARLES DE G", "ad1":"ZONE DU FRET 2", "ad2":"", "ad3":"", "lat":"48.9946611", "lng":"2.530971"}, "CDG": {"countryCode":"FR", "countryName":"FRANCE", "depotName":"PARIS CHARLES DE GAULLE APT", "postcode":"95704", "town":"ROISSY-CDG", "ad1":"24 RUE DU TRAIT D UNION", "ad2":"", "ad3":"", "lat":"49.0012268", "lng":"2.5365282"}, "CDG2": {"countryCode":"FR", "countryName":"FRANCE", "depotName":"CDG A/P COMM. UPLIFT", "postcode":"93290", "town":"ROISSY", "ad1":"CDG AIRPORT 4", "ad2":"", "ad3":"", "lat":"48.9937627", "lng":"2.529502"}, "CEV2": {"countryCode":"NL", "countryName":"NETHERLANDS", "depotName":"CEVA Eindhoven", "postcode":"5651", "town":"Eindhoven", "ad1":"De Schakel 40", "ad2":"", "ad3":"", "lat":"51.4734255", "lng":"5.4097995"}, "CGN": {"countryCode":"DE", "countryName":"GERMANY", "depotName":"IMPORT COLOGNE", "postcode":"51149", "town":"KOELN", "ad1":"HANSESTRASSE 72A", "ad2":"", "ad3":"", "lat":"50.9139198", "lng":"7.067263"}, "CIA": {"countryCode":"IT", "countryName":"ITALY", "depotName":"CIAMPINO AIRPORT", "postcode":"00043", "town":"CIAMPINO AEROPORTO", "ad1":"VIA APPIA NUOVA, 1651", "ad2":"", "ad3":"", "lat":"41.7854468", "lng":"12.5988001"}, "CIN1": {"countryCode":"DE", "countryName":"GERMANY", "depotName":"CINRAM WIRELESS GMBH", "postcode":"52477", "town":"ALSDORF", "ad1":"Konrad-Zuse-str. 37", "ad2":"", "ad3":"", "lat":"50.87637", "lng":"6.21934"}, "CLJ": {"countryCode":"RO", "countryName":"ROMANIA", "depotName":"CLUJ", "postcode":"400397", "town":"CLUJ-NAPOCA", "ad1":"STR TRAIAN VUIA NR 214", "ad2":"", "ad3":"", "lat":"46.790742", "lng":"23.7045979"}, "COL": {"countryCode":"DE", "countryName":"GERMANY", "depotName":"COLOGNE", "postcode":"51149", "town":"KOELN", "ad1":"JOSEF-LINDEN-WEG 18", "ad2":"", "ad3":"", "lat":"50.9181567", "lng":"7.042476"}, "CPH": {"countryCode":"DK", "countryName":"DENMARK", "depotName":"COPENHAGEN", "postcode":"2650", "town":"HVIDOVRE", "ad1":"JERNHOLMEN 28-32", "ad2":"", "ad3":"", "lat":"55.6068424", "lng":"12.4891508"}, "CH4": {"countryCode":"FR", "countryName":"FRANCE", "depotName":"CHARTRES INTERNATIONAL", "postcode":"28630", "town":"GELAINVILLE", "ad1":"AVENUE GUSTAVE EIFFEL", "ad2":"", "ad3":"", "lat":"48.4396132", "lng":"1.5324447"}, "DAI1": {"countryCode":"BE", "countryName":"BELGIUM", "depotName":"DAIKIN EUROPE NV", "postcode":"8400", "town":"Oostende", "ad1":"Zandvoordestraat 360", "ad2":"", "ad3":"", "lat":"51.2108015", "lng":"2.9572714"}, "DFT": {"countryCode":"DE", "countryName":"GERMANY", "depotName":"HUB RHEIN MAIN DFT", "postcode":"65205", "town":"WIESBADEN", "ad1":"HUB RHEIN-MAIN DFT", "ad2":"", "ad3":"", "lat":"50.0385982", "lng":"8.2628977"}, "DNG": {"countryCode":"DE", "countryName":"GERMANY", "depotName":"NUERNBERG HUB", "postcode":"90475", "town":"NUERNBERG", "ad1":"AM HOHEN BUEHL 1-5", "ad2":"", "ad3":"", "lat":"49.3880338", "lng":"11.1740973"}, "DON1": {"countryCode":"BE", "countryName":"BELGIUM", "depotName":"DONALDSON EUROPE BVBA", "postcode":"8000", "town":"BRUGGE", "ad1":"PATHOEKEWEG 166", "ad2":"", "ad3":"", "lat":"51.2526232", "lng":"3.2116421"}, "DRS": {"countryCode":"DE", "countryName":"GERMANY", "depotName":"DRESDEN", "postcode":"01683", "town":"NOSSEN", "ad1":"ZELLSTEIG 6", "ad2":"", "ad3":"", "lat":"51.0497237", "lng":"13.2928656"}, "DTM": {"countryCode":"DE", "countryName":"GERMANY", "depotName":"DORTMUND", "postcode":"44536", "town":"LUENEN", "ad1":"ZECHENSTRASSE 25", "ad2":"", "ad3":"", "lat":"51.5928164", "lng":"7.430846"}, "DUB": {"countryCode":"IE", "countryName":"IRELAND", "depotName":"DUBLIN", "postcode":"DUBLIN 24", "town":"TALLAGHT", "ad1":"UNIT 1", "ad2":"", "ad3":"", "lat":"53.2975288", "lng":"-6.3687303"}, "DUB2": {"countryCode":"IE", "countryName":"IRELAND", "depotName":"Swaplocation Dublin", "postcode":"", "town":"Dublin", "ad1":"Alexandra Road 1", "ad2":"", "ad3":"", "lat":"53.3509661", "lng":"-6.2204821"}, "DUS": {"countryCode":"DE", "countryName":"GERMANY", "depotName":"HILDEN", "postcode":"40721", "town":"HILDEN", "ad1":"LIEBIGSTRASSE 21", "ad2":"", "ad3":"", "lat":"51.16123", "lng":"6.91833"}, "DZ5": {"countryCode":"GB", "countryName":"UNITED KINGDOM", "depotName":"DARTFORD", "postcode":"DA1 5AH", "town":"DARTFORD", "ad1":"CENTRAL ROAD", "ad2":"", "ad3":"", "lat":"51.458998", "lng":"0.2197473"}, "EAS": {"countryCode":"ES", "countryName":"SPAIN", "depotName":"SAN SEBASTIAN", "postcode":"20140", "town":"ANDOAIN", "ad1":"POL.IND. LEIZOTZ S/N", "ad2":"", "ad3":"", "lat":"43.2173859", "lng":"-2.0210563"}, "ECL": {"countryCode":"FR", "countryName":"FRANCE", "depotName":"EU CLEARANCE", "postcode":"68870", "town":"BARTENHEIM", "ad1":"RUE ROBERT SCHUMAN 6", "ad2":"", "ad3":"", "lat":"47.6392947", "lng":"7.4937372"}, "EF3": {"countryCode":"DE", "countryName":"GERMANY", "depotName":"ERFURT DEPOT", "postcode":"99092", "town":"ERFURT", "ad1":"FLUGHAFENSTRASSE 21", "ad2":"", "ad3":"", "lat":"50.9760135", "lng":"10.9556808"}, "EGL1": {"countryCode":"HU", "countryName":"HUNGARY", "depotName":"Eglo HU", "postcode":"3060", "town":"Paszto", "ad1":"Fo ut 155", "ad2":"", "ad3":"", "lat":"47.9304919", "lng":"19.7109465"}, "EIN": {"countryCode":"NL", "countryName":"NETHERLANDS", "depotName":"EINDHOVEN", "postcode":"5651 GG", "town":"EINDHOVEN", "ad1":"ACHTSEWEG NOORD 17", "ad2":"", "ad3":"", "lat":"51.478847", "lng":"5.4076954"}, "EMA": {"countryCode":"GB", "countryName":"UNITED KINGDOM", "depotName":"EAST MIDLANDS AIR HUB", "postcode":"DE74 2SA", "town":"CASTLE DONINGTON  DERBYSHIRE", "ad1":"CARGO 4, BUILDING 69", "ad2":"", "ad3":"", "lat":"52.8272499", "lng":"-1.3214208"}, "EPC2": {"countryCode":"AT", "countryName":"AUSTRIA", "depotName":"Epcos OHG", "postcode":"8530", "town":"Deutschlandberg", "ad1":"Siemensstrasse 43", "ad2":"", "ad3":"", "lat":"46.8219", "lng":"15.232246"}, "ERG1": {"countryCode":"NL", "countryName":"NETHERLANDS", "depotName":"Roos Electronics B.V.", "postcode":"5626 DL", "town":"Eindhoven", "ad1":"Lage Zijde 10", "ad2":"", "ad3":"", "lat":"51.48082", "lng":"5.41749"}, "ETZ": {"countryCode":"FR", "countryName":"FRANCE", "depotName":"METZ INTERNATIONAL", "postcode":"57365", "town":"FLEVY", "ad1":"ZAC DE LA FONTAINE DES SAINTS", "ad2":"", "ad3":"", "lat":"49.2332227", "lng":"6.2305025"}, "F1T": {"countryCode":"DE", "countryName":"GERMANY", "depotName":"FDX EXP/FRANKFURT (FTL)", "postcode":"60549", "town":"FRANKFURT", "ad1":"AIRPORT", "ad2":"", "ad3":"", "lat":"50.0403365", "lng":"8.5348648"}, "FBCN": {"countryCode":"ES", "countryName":"SPAIN", "depotName":"FedEx Barcelona", "postcode":"08820", "town":"BARCELONA", "ad1":"CENTRO DE CARGA AEREA 0", "ad2":"", "ad3":"", "lat":"41.30167", "lng":"2.0682076"}, "FBG": {"countryCode":"DE", "countryName":"GERMANY", "depotName":"FREIBURG", "postcode":"79336", "town":"HERBOLZHEIM", "ad1":"ALLMENDSTRASSE 10", "ad2":"", "ad3":"", "lat":"48.2196569", "lng":"7.7574163"}, "FCDG": {"countryCode":"FR", "countryName":"FRANCE", "depotName":"FEDEX CDG - GB4 FEDEX", "postcode":"93290", "town":"Tremblay-en-France", "ad1":"Rue des Voyelles 65", "ad2":"", "ad3":"", "lat":"48.9952", "lng":"2.5291"}, "FCGN": {"countryCode":"DE", "countryName":"GERMANY", "depotName":"FedEx  Cologne", "postcode":"51147", "town":"Cologne", "ad1":"Heinrich-Steinmann-Stra�e", "ad2":"", "ad3":"", "lat":"50.874025", "lng":"7.1254057"}, "FCPH": {"countryCode":"DK", "countryName":"DENMARK", "depotName":"FedEx Kastrup", "postcode":"2770", "town":"KASTRUP", "ad1":"KYSTVEJEN  34", "ad2":"", "ad3":"", "lat":"55.6176013", "lng":"12.6776353"}, "FIB1": {"countryCode":"DE", "countryName":"GERMANY", "depotName":"Fibro", "postcode":"DE-74855", "town":"Hassmersheim", "ad1":"August-Laepple Weg 1", "ad2":"", "ad3":"", "lat":"49.3115031", "lng":"9.1390687"}, "FMIL": {"countryCode":"IT", "countryName":"ITALY", "depotName":"FedEx Milano", "postcode":"20098", "town":"Sesto Ulteriano", "ad1":"Via Marche  1", "ad2":"", "ad3":"", "lat":"45.3954502", "lng":"9.2569836"}, "FMXP": {"countryCode":"IT", "countryName":"ITALY", "depotName":"FedEx Malpensa", "postcode":"21010", "town":"Aeroporto di Malpensa", "ad1":"Cargo City SUD", "ad2":"", "ad3":"", "lat":"45.6239858", "lng":"8.7112367"}, "FRA": {"countryCode":"DE", "countryName":"GERMANY", "depotName":"FRANKFURT AIRPORT", "postcode":"60549", "town":"FRANKFURT MAIN", "ad1":"CARGO CITY NORD", "ad2":"", "ad3":"", "lat":"50.0257831", "lng":"8.5852383"}, "FRT": {"countryCode":"DE", "countryName":"GERMANY", "depotName":"FRANKFURT", "postcode":"63128", "town":"DIETZENBACH", "ad1":"WALDSTRASSE 84-86", "ad2":"", "ad3":"", "lat":"50.0185833", "lng":"8.806224"}, "FSTN": {"countryCode":"GB", "countryName":"UNITED KINGDOM", "depotName":"Fedex Stansted", "postcode":"CM241FE", "town":"stansted", "ad1":"pincy rd 0", "ad2":"", "ad3":"", "lat":"51.8856811", "lng":"0.249826"}, "FZLX": {"countryCode":"GB", "countryName":"UNITED KINGDOM", "depotName":"FedEx Marston Gate", "postcode":"MK43 0YL", "town":"Ridgmont", "ad1":"Badgers Rise 0", "ad2":"", "ad3":"", "lat":"52.0328197", "lng":"-0.5902515"}, "GI3": {"countryCode":"GB", "countryName":"UNITED KINGDOM", "depotName":"FASHION HUB LEICESTER", "postcode":"LE3 8DX", "town":"LEICESTER", "ad1":"MILL LANE IND EST", "ad2":"", "ad3":"", "lat":"52.6520953", "lng":"-1.208929"}, "GIL2": {"countryCode":"SK", "countryName":"SLOVAKIA", "depotName":"Samsung DC Gan", "postcode":"924 01", "town":"Gan", "ad1":"Gan 318", "ad2":"", "ad3":"", "lat":"48.23014", "lng":"17.72159"}, "GMHD": {"countryCode":"HU", "countryName":"HUNGARY", "depotName":"Grundfos HU Distribution Centr", "postcode":"2051", "town":"Biatorbagy", "ad1":"Huber street 5", "ad2":"", "ad3":"", "lat":"47.4729924", "lng":"18.8652115"}, "GMHX": {"countryCode":"HU", "countryName":"HUNGARY", "depotName":"Grundfos HU XDock", "postcode":"2051", "town":"Biatorbagy", "ad1":"Rozalia park 11", "ad2":"", "ad3":"", "lat":"47.4754469", "lng":"18.843922"}, "GNM1": {"countryCode":"HU", "countryName":"HUNGARY", "depotName":"General Motors HU", "postcode":"2040", "town":"Budaors", "ad1":"Akron utka 1621", "ad2":"", "ad3":"", "lat":"47.4475487", "lng":"18.9581674"}, "GNO": {"countryCode":"FR", "countryName":"FRANCE", "depotName":"GARONOR", "postcode":"93600", "town":"AULNAY SOUS BOIS", "ad1":"GARONOR OUEST", "ad2":"", "ad3":"", "lat":"48.9602628", "lng":"2.4640687"}, "GOT": {"countryCode":"SE", "countryName":"SWEDEN", "depotName":"GOTHENBURG", "postcode":"438 70", "town":"LANDVETTER", "ad1":"FLYGFRAKTSV�GEN 1B", "ad2":"", "ad3":"", "lat":"57.6722974", "lng":"12.3006212"}, "GRZ": {"countryCode":"AT", "countryName":"AUSTRIA", "depotName":"GRAZ", "postcode":"8401", "town":"KALSDORF BEI GRAZ", "ad1":"BAHNHOFSTRASSE 101-103", "ad2":"", "ad3":"", "lat":"46.9655965", "lng":"15.4575626"}, "GSH1": {"countryCode":"FR", "countryName":"FRANCE", "depotName":"GSH - Global Service Handling", "postcode":"93290", "town":"Tremblay en France", "ad1":"24 route du midi  .", "ad2":"", "ad3":"", "lat":"48.9937", "lng":"2.5282837"}, "GVA": {"countryCode":"CH", "countryName":"SWITZERLAND", "depotName":"GENEVA", "postcode":"1215", "town":"GENEVE", "ad1":"AEROGARE FRET", "ad2":"", "ad3":"", "lat":"46.2340517", "lng":"6.1105029"}, "GW3": {"countryCode":"PL", "countryName":"POLAND", "depotName":"GORZOW WIELKOPOLSKI", "postcode":"66-400", "town":"GORZOW WIELKOPOLSKI", "ad1":"UL. WALCZAKA 106", "ad2":"", "ad3":"", "lat":"52.74613", "lng":"15.20801"}, "HAJ": {"countryCode":"DE", "countryName":"GERMANY", "depotName":"HANNOVER AIR HUB", "postcode":"30855", "town":"LANGENHAGEN", "ad1":"HEINZ PETER PIPER STRASSE 11", "ad2":"", "ad3":"", "lat":"52.4620971", "lng":"9.6919624"}, "HAM": {"countryCode":"DE", "countryName":"GERMANY", "depotName":"HAMBURG", "postcode":"22113", "town":"HAMBURG", "ad1":"AMANDUS-STUBBE STR. 12", "ad2":"", "ad3":"", "lat":"53.5056116", "lng":"10.0908933"}, "HDM1": {"countryCode":"DE", "countryName":"GERMANY", "depotName":"HEIDELBERGER DRUCKMASCHINEN", "postcode":"69168", "town":"WIESLOCH", "ad1":"GUTENBERGSTRASSE 1", "ad2":"", "ad3":"", "lat":"49.2920163", "lng":"8.66033"}, "HEL": {"countryCode":"FI", "countryName":"FINLAND", "depotName":"HELSINKI", "postcode":"01530", "town":"VANTAA", "ad1":"TULLIMIEHENTIE 2", "ad2":"", "ad3":"", "lat":"60.3107546", "lng":"24.9945042"}, "HH6": {"countryCode":"NL", "countryName":"NETHERLANDS", "depotName":"HEALTH CARE HUB", "postcode":"6429 AA", "town":"HH6 HEERLEN", "ad1":"OUDE RODERWEG 25", "ad2":"", "ad3":"", "lat":"50.8538032", "lng":"6.0011219"}, "HL3": {"countryCode":"SE", "countryName":"SWEDEN", "depotName":"HELSINGBORG HUB", "postcode":"25107", "town":"HELSINGBORG", "ad1":"STRANDBADSVAGEN 7", "ad2":"", "ad3":"", "lat":"56.0210015", "lng":"12.709025"}, "HLT1": {"countryCode":"DE", "countryName":"GERMANY", "depotName":"HILTI", "postcode":"46047", "town":"OBERHAUSEN", "ad1":"HAUSMANNSFELD 31", "ad2":"", "ad3":"", "lat":"51.4824864", "lng":"6.8946705"}, "HMK": {"countryCode":"DE", "countryName":"GERMANY", "depotName":"HAMMINKELN", "postcode":"46499", "town":"HAMMINKELN", "ad1":"GUETERSTRASSE 39-43", "ad2":"", "ad3":"", "lat":"51.73356", "lng":"6.60174"}, "HNJ": {"countryCode":"DE", "countryName":"GERMANY", "depotName":"HANNOVER ROAD HUB", "postcode":"30855", "town":"LANGENHAGEN", "ad1":"HEINZ PETER PIPER STRASSE 11", "ad2":"", "ad3":"", "lat":"52.4621148", "lng":"9.6920119"}, "HOL3": {"countryCode":"GB", "countryName":"UNITED KINGDOM", "depotName":"Swaplocation Holyhead", "postcode":"LL65 1DR", "town":"Holyhead", "ad1":"Gwynedd 1", "ad2":"", "ad3":"", "lat":"53.3148315", "lng":"-4.6258676"}, "ICM": {"countryCode":"IT", "countryName":"ITALY", "depotName":"COMO", "postcode":"22070", "town":"GRANDATE", "ad1":"VIA RICCARDO MANTERO 13", "ad2":"", "ad3":"", "lat":"45.7742096", "lng":"9.0478432"}, "IEV": {"countryCode":"UA", "countryName":"UKRAINE", "depotName":"KIEV", "postcode":"08324", "town":"GORA", "ad1":"21 TSENTRALNA STREET", "ad2":"", "ad3":"", "lat":"50.3921665", "lng":"30.7888588"}, "IMI1": {"countryCode":"DE", "countryName":"GERMANY", "depotName":"IMI Norgren", "postcode":"46519", "town":"Alpen", "ad1":"Bruckstrasse 93", "ad2":"", "ad3":"", "lat":"51.582526", "lng":"6.5171118"}, "INN": {"countryCode":"AT", "countryName":"AUSTRIA", "depotName":"INNSBRUCK", "postcode":"6305", "town":"WORGL", "ad1":"WORGLER BODEN 3", "ad2":"", "ad3":"", "lat":"47.48587", "lng":"12.10996"}, "INN3": {"countryCode":"HU", "countryName":"HUNGARY", "depotName":"TNT Innight Hungary", "postcode":"2046", "town":"T�r�kb�lint", "ad1":"DEPO Hossz�r�t 62", "ad2":"", "ad3":"", "lat":"47.4462996", "lng":"18.9264098"}, "ITC": {"countryCode":"IT", "countryName":"ITALY", "depotName":"TRIESTE", "postcode":"34010", "town":"SCONIGO", "ad1":"VIA STAZIONE DI PROSECCO 36/3", "ad2":"", "ad3":"", "lat":"45.7326693", "lng":"13.7478787"}, "JAJ1": {"countryCode":"BE", "countryName":"BELGIUM", "depotName":"Johnson & Johnson", "postcode":"6180", "town":"Courcelles", "ad1":"Rue de Luxembourg 6", "ad2":"", "ad3":"", "lat":"50.4756687", "lng":"4.3649616"}, "JAJ2": {"countryCode":"BE", "countryName":"BELGIUM", "depotName":"J&J GMED LA LOUVIERE", "postcode":"7110", "town":"La Louviere", "ad1":"Rue du bois de la hutte 7", "ad2":"", "ad3":"", "lat":"50.50173", "lng":"4.16779"}, "KBZ": {"countryCode":"DE", "countryName":"GERMANY", "depotName":"KOBLENZ", "postcode":"56220", "town":"URMITZ", "ad1":"RUDOLF-DIESEL-STRASSE 62", "ad2":"", "ad3":"", "lat":"50.3981768", "lng":"7.5286152"}, "KG4": {"countryCode":"GB", "countryName":"UNITED KINGDOM", "depotName":"KINGSBURY - PDC", "postcode":"B78 2EX", "town":"TAMWORTH", "ad1":"KINGSBURY LINK INDUSTRIAL EST", "ad2":"", "ad3":"", "lat":"52.5817024", "lng":"-1.6579616"}, "KIS1": {"countryCode":"BE", "countryName":"BELGIUM", "depotName":"Knauf Insulation Sprl", "postcode":"4600", "town":"4600 Vise", "ad1":"Rue de Maestricht  95", "ad2":"", "ad3":"", "lat":"50.7466279", "lng":"5.7035544"}, "KIV": {"countryCode":"MD", "countryName":"MOLDOVA, REPUBLIC OF", "depotName":"KISHINEV", "postcode":"MD-2012", "town":"KISHINEV", "ad1":"STR. HALTEI 41A", "ad2":"", "ad3":"", "lat":"47.0164064", "lng":"28.8668308"}, "KLE": {"countryCode":"DE", "countryName":"GERMANY", "depotName":"KASSEL", "postcode":"34123", "town":"KASSEL", "ad1":"GOTTLIEB-DAIMLER STRASSE 5 GVZ", "ad2":"", "ad3":"", "lat":"51.2703562", "lng":"9.5115625"}, "KLU": {"countryCode":"AT", "countryName":"AUSTRIA", "depotName":"KLAGENFURT", "postcode":"9020", "town":"KLAGENFURT", "ad1":"SCHAUSSGASSE 4 ( C/O MEXLOG)", "ad2":"", "ad3":"", "lat":"46.6104521", "lng":"14.3297348"}, "KOR": {"countryCode":"BE", "countryName":"BELGIUM", "depotName":"KORTRIJK", "postcode":"9870", "town":"ZULTE", "ad1":"LEENSTRAAT 175", "ad2":"", "ad3":"", "lat":"50.9022102", "lng":"3.4666246"}, "KSC": {"countryCode":"SK", "countryName":"SLOVAKIA", "depotName":"KOSICE", "postcode":"040 17", "town":"KOSICE", "ad1":"LETISKO KOSICE", "ad2":"", "ad3":"", "lat":"48.666251", "lng":"21.241379"}, "KT4": {"countryCode":"PL", "countryName":"POLAND", "depotName":"KATOWICE DEPOT", "postcode":"40-155", "town":"KATOWICE", "ad1":"KONDUKTORSKA 39E", "ad2":"", "ad3":"", "lat":"50.2831806", "lng":"19.02783"}, "KTW": {"countryCode":"PL", "countryName":"POLAND", "depotName":"KATOWICE", "postcode":"42-625", "town":"KATOWICE", "ad1":"WOLNOSCI 90", "ad2":"", "ad3":"", "lat":"50.4696487", "lng":"19.0742518"}, "KUN": {"countryCode":"LT", "countryName":"LITHUANIA", "depotName":"KAUNAS", "postcode":"LT-54459", "town":"KARMELAVA  KAUNO RAJ", "ad1":"PIEVU 1", "ad2":"", "ad3":"", "lat":"54.9725249", "lng":"24.0764801"}, "LD2": {"countryCode":"NL", "countryName":"NETHERLANDS", "depotName":"DELFT", "postcode":"2627 BA", "town":"DELFT", "ad1":"MARCONIWEG 11", "ad2":"", "ad3":"", "lat":"51.9849136", "lng":"4.3716066"}, "LED": {"countryCode":"RU", "countryName":"RUSSIAN FEDERATION", "depotName":"ST  PETERSBURG", "postcode":"192241", "town":"ST  PETERSBURG", "ad1":"SOFIYSKAYA STR., 14", "ad2":"", "ad3":"", "lat":"59.8594217", "lng":"30.4204543"}, "LGE": {"countryCode":"BE", "countryName":"BELGIUM", "depotName":"LIEGE", "postcode":"4041", "town":"MILMORT", "ad1":"ZI 3 RUE DE LEPERONNERIE 1", "ad2":"", "ad3":"", "lat":"50.69436", "lng":"5.58607"}, "LGG": {"countryCode":"BE", "countryName":"BELGIUM", "depotName":"LIEGE EURO HUB", "postcode":"4460", "town":"GRACE-HOLLOGNE", "ad1":"RUE DE L AEROPORT", "ad2":"", "ad3":"", "lat":"50.6418633", "lng":"5.4617619"}, "LGO1": {"countryCode":"CZ", "countryName":"CZECH REPUBLIC", "depotName":"Lego Production s.r.o EDC", "postcode":"25009", "town":"Jirny", "ad1":"Podebradska 603", "ad2":"", "ad3":"", "lat":"50.1261964", "lng":"14.6976698"}, "LHR": {"countryCode":"GB", "countryName":"UNITED KINGDOM", "depotName":"LONDON HEATHROW AIR HUB", "postcode":"TW5 9NW", "town":"MIDDLESEX", "ad1":"UNIT 6, SPITFIRE WAY", "ad2":"", "ad3":"", "lat":"51.4909941", "lng":"-0.3990141"}, "LIL": {"countryCode":"FR", "countryName":"FRANCE", "depotName":"LILLE INTERNATIONAL", "postcode":"59810", "town":"LESQUIN", "ad1":"2 RUE MARYSE BASTIE", "ad2":"", "ad3":"", "lat":"50.5716083", "lng":"3.1154112"}, "LIN": {"countryCode":"IT", "countryName":"ITALY", "depotName":"LINATE AIRPORT", "postcode":"20100", "town":"MILANO", "ad1":"VIALE FORLANINI SNC", "ad2":"", "ad3":"", "lat":"45.455157", "lng":"9.2826684"}, "LIS": {"countryCode":"PT", "countryName":"PORTUGAL", "depotName":"LISBON", "postcode":"1749-104", "town":"LISBOA", "ad1":"RUA C   EDIFICIO 77", "ad2":"", "ad3":"", "lat":"38.7754688", "lng":"-9.1261278"}, "LJ1": {"countryCode":"SI", "countryName":"SLOVENIA", "depotName":"LJUBLJANA DEPOT", "postcode":"1000", "town":"LJUBLJANA", "ad1":"SMARTINSKA CESTA 152 HALA VII", "ad2":"", "ad3":"", "lat":"46.0682549", "lng":"14.5444055"}, "LJU": {"countryCode":"SI", "countryName":"SLOVENIA", "depotName":"LETALISCE JOZETA PUCNIKA (LJU)", "postcode":"4210", "town":"BRNIK", "ad1":"ZGORNJI BRNIK 130E", "ad2":"", "ad3":"", "lat":"46.2297135", "lng":"14.4580929"}, "LNZ": {"countryCode":"AT", "countryName":"AUSTRIA", "depotName":"LINZ", "postcode":"4490", "town":"ST FLORIAN", "ad1":"IM ASTENFELD 2A", "ad2":"", "ad3":"", "lat":"48.2241098", "lng":"14.394006"}, "LPZ": {"countryCode":"DE", "countryName":"GERMANY", "depotName":"LEIPZIG", "postcode":"04509", "town":"LEIPZIG", "ad1":"DORNIERSTRASSE 6", "ad2":"", "ad3":"", "lat":"51.4708613", "lng":"12.2128575"}, "LTA": {"countryCode":"AT", "countryName":"AUSTRIA", "depotName":"HOERBRANZ", "postcode":"6912", "town":"HOERBRANZ", "ad1":"ECO PARK  OBJEKT 25", "ad2":"", "ad3":"", "lat":"47.5506242", "lng":"9.7419341"}, "LUD1": {"countryCode":"DE", "countryName":"GERMANY", "depotName":"LUDDEKE", "postcode":"40789", "town":"MONHEIM", "ad1":"SANDSTRASSE  35", "ad2":"", "ad3":"", "lat":"51.1127121", "lng":"6.8881568"}, "LUG": {"countryCode":"CH", "countryName":"SWITZERLAND", "depotName":"LUGANO", "postcode":"6828", "town":"BALERNA", "ad1":"VIA PASSEGGIATA 2", "ad2":"", "ad3":"", "lat":"45.8381524", "lng":"9.0042308"}, "LUX": {"countryCode":"LU", "countryName":"LUXEMBOURG", "depotName":"LUXEMBOURG", "postcode":"3290", "town":"BETTEMBOURG", "ad1":"Z.A.E. KRAKELSHAFF", "ad2":"", "ad3":"", "lat":"49.5055172", "lng":"6.1140405"}, "LUX2": {"countryCode":"LU", "countryName":"LUXEMBOURG", "depotName":"LUX A/P COMM. UPLIFT", "postcode":"6962", "town":"LUXEMBOURG AIRPORT", "ad1":"CARGO CENTER LUX AIRPORT 1", "ad2":"", "ad3":"", "lat":"49.6365134", "lng":"6.2373626"}, "LYS": {"countryCode":"FR", "countryName":"FRANCE", "depotName":"LYON", "postcode":"69780", "town":"MIONS", "ad1":"6 BOULEVARD BERNARD VOS", "ad2":"", "ad3":"", "lat":"45.675971", "lng":"4.9676152"}, "MAD": {"countryCode":"ES", "countryName":"SPAIN", "depotName":"MADRID", "postcode":"28830", "town":"SAN FERNANDO DE HENARES", "ad1":"C DE LOS ALBANILES 4-6-8", "ad2":"", "ad3":"", "lat":"40.444544", "lng":"-3.506241"}, "MB3": {"countryCode":"SI", "countryName":"SLOVENIA", "depotName":"MARIBOR", "postcode":"2311", "town":"HOCE", "ad1":"MIKLAVSKA CESTA 65", "ad2":"", "ad3":"", "lat":"46.497705", "lng":"15.6551526"}, "MED5": {"countryCode":"CH", "countryName":"SWITZERLAND", "depotName":"Medtronic Suisse", "postcode":"1131", "town":"Tolochenaz", "ad1":"Route du Molliau 31", "ad2":"", "ad3":"", "lat":"46.5008771", "lng":"6.4822875"}, "MHN": {"countryCode":"DE", "countryName":"GERMANY", "depotName":"MANNHEIM", "postcode":"68219", "town":"MANNHEIM", "ad1":"ESSENER STRASSE 52-54", "ad2":"", "ad3":"", "lat":"49.421413", "lng":"8.5119608"}, "MI6": {"countryCode":"IT", "countryName":"ITALY", "depotName":"MILAN INTL ROAD HUB", "postcode":"20068", "town":"PESCHIERA BORROMEO", "ad1":"VIA FRATELLI BANDIERA SNC", "ad2":"", "ad3":"", "lat":"45.4375699", "lng":"9.3043105"}, "ML1": {"countryCode":"FR", "countryName":"FRANCE", "depotName":"MULHOUSE INTERNATIONAL", "postcode":"68310", "town":"WITTELSHEIM", "ad1":"2 RUE D ESPAGNE", "ad2":"", "ad3":"", "lat":"47.78183", "lng":"7.22999"}, "MLA": {"countryCode":"MT", "countryName":"MALTA", "depotName":"MALTA", "postcode":"LQA 1540", "town":"LUQA  MALTA", "ad1":"VALLETTA ROAD", "ad2":"", "ad3":"", "lat":"35.8649651", "lng":"14.4897117"}, "MMA": {"countryCode":"SE", "countryName":"SWEDEN", "depotName":"MALMO DEPOT", "postcode":"23032", "town":"STURUP", "ad1":"FELTVAGEN", "ad2":"", "ad3":"", "lat":"55.5376951", "lng":"13.3635369"}, "MOW": {"countryCode":"RU", "countryName":"RUSSIAN FEDERATION", "depotName":"MOSCOW", "postcode":"123458", "town":"MOSCOW", "ad1":"2ND LYKOVSKAYA STR.  63  BLD.5", "ad2":"", "ad3":"", "lat":"55.7885101", "lng":"37.3970579"}, "MPL": {"countryCode":"FR", "countryName":"FRANCE", "depotName":"MONTPELLIER INTERNATIONAL", "postcode":"34130", "town":"MAUGUIO", "ad1":"SITE EUROGARE", "ad2":"", "ad3":"", "lat":"43.5968776", "lng":"3.9572507"}, "MRS": {"countryCode":"FR", "countryName":"FRANCE", "depotName":"MARSEILLE INTERNATIONAL", "postcode":"13700", "town":"MARIGNANE", "ad1":"ROUTE DE L AVIATION GENERALE", "ad2":"", "ad3":"", "lat":"43.4412674", "lng":"5.2209394"}, "MSQ": {"countryCode":"BY", "countryName":"BELARUS", "depotName":"MINSK", "postcode":"220073", "town":"MINSK", "ad1":"4-TH ZAGORODNY LANE 56A", "ad2":"", "ad3":"", "lat":"53.9066197", "lng":"27.5915295"}, "MUC": {"countryCode":"DE", "countryName":"GERMANY", "depotName":"MUNICH AIR HUB", "postcode":"85356", "town":"MUENCHEN", "ad1":"SUEDALLEE", "ad2":"", "ad3":"", "lat":"48.3510236", "lng":"11.7725554"}, "MUT0": {"countryCode":"BE", "countryName":"BELGIUM", "depotName":"MUTOH EUROPE NV", "postcode":"8400", "town":"Oostende", "ad1":"Archimedesstraat 13", "ad2":"", "ad3":"", "lat":"51.2118961", "lng":"2.9402567"}, "MV9": {"countryCode":"FR", "countryName":"FRANCE", "depotName":"MARLY LA VILLE HUB", "postcode":"95670", "town":"MARLY LA VILLE", "ad1":"11 RUE JEAN JAURES", "ad2":"", "ad3":"", "lat":"49.0905499", "lng":"2.5243692"}, "NCE": {"countryCode":"FR", "countryName":"FRANCE", "depotName":"NICE INTERNATIONAL", "postcode":"06200", "town":"NICE", "ad1":"PARC D ACTIVITE LOGISTIQUE", "ad2":"", "ad3":"", "lat":"43.7125124", "lng":"7.2043654"}, "NUE": {"countryCode":"DE", "countryName":"GERMANY", "depotName":"NUERNBERG AIRPORT", "postcode":"90411", "town":"NUERNBERG", "ad1":"FLUGHAFEN STRASSE 86A", "ad2":"", "ad3":"", "lat":"49.49274", "lng":"11.08736"}, "NW7": {"countryCode":"NL", "countryName":"NETHERLANDS", "depotName":"NIEUWEGEIN", "postcode":"3439 LC", "town":"NIEUWEGEIN", "ad1":"LIESBOSCH 90", "ad2":"", "ad3":"", "lat":"52.0509328", "lng":"5.1115016"}, "OPO": {"countryCode":"PT", "countryName":"PORTUGAL", "depotName":"PORTO", "postcode":"4470-573", "town":"MOREIRA DA MAIA", "ad1":"RUA DO BARREIRO", "ad2":"", "ad3":"", "lat":"41.23264", "lng":"-8.6656529"}, "OPT1": {"countryCode":"DE", "countryName":"GERMANY", "depotName":"Optimed", "postcode":"DE-76275", "town":"Ettlingen", "ad1":"Ferdinand-Porsche str 11", "ad2":"", "ad3":"", "lat":"48.935944", "lng":"8.3833118"}, "ORAC": {"countryCode":"BE", "countryName":"BELGIUM", "depotName":"ORAC DECOR", "postcode":"8400", "town":"Oostende", "ad1":"Biekorfstraat 32", "ad2":"", "ad3":"", "lat":"51.218815", "lng":"2.9594379"}, "ORB": {"countryCode":"SE", "countryName":"SWEDEN", "depotName":"OREBRO", "postcode":"705 94", "town":"OREBRO", "ad1":"OREBRO - BOFORS FLYGPLATS", "ad2":"", "ad3":"", "lat":"59.2277333", "lng":"15.0470636"}, "ORE": {"countryCode":"FR", "countryName":"FRANCE", "depotName":"ORLEANS INTERNATIONAL", "postcode":"45140", "town":"ORMES", "ad1":"RUE DE PASSEE A BALANCE", "ad2":"", "ad3":"", "lat":"47.938223", "lng":"1.8325329"}, "OSL": {"countryCode":"NO", "countryName":"NORWAY", "depotName":"OSLO", "postcode":"2000", "town":"LILLESTROM", "ad1":"LEIRAVEIEN 13-A", "ad2":"", "ad3":"", "lat":"59.967633", "lng":"11.0722186"}, "OSR": {"countryCode":"CZ", "countryName":"CZECH REPUBLIC", "depotName":"OSTRAVA", "postcode":"709 00", "town":"OSTRAVA", "ad1":"MARIANSKE HORY", "ad2":"", "ad3":"", "lat":"49.83918", "lng":"18.28816"}, "PAR9": {"countryCode":"BE", "countryName":"BELGIUM", "depotName":"Johnson&Johnson / Janssen", "postcode":"2340", "town":"Beerse", "ad1":"Kempenlaan 1", "ad2":"", "ad3":"", "lat":"51.3085676", "lng":"4.8591033"}, "PD3": {"countryCode":"IT", "countryName":"ITALY", "depotName":"PIACENZA DOMESTIC HUB", "postcode":"29100", "town":"PIACENZA", "ad1":"STRADA AI DOSSI DI LE MOSE", "ad2":"", "ad3":"", "lat":"45.0507351", "lng":"9.7407424"}, "PEN1": {"countryCode":"NL", "countryName":"NETHERLANDS", "depotName":"PERKIN ELMER NEDERLAND B.V.", "postcode":"9723 TH", "town":"GRONINGEN", "ad1":"Rigaweg  22", "ad2":"", "ad3":"", "lat":"53.2081116", "lng":"6.6109141"}, "PFS1": {"countryCode":"BE", "countryName":"BELGIUM", "depotName":"PFSwebBVBA", "postcode":"4460", "town":"Grace Hollogne", "ad1":"Rue Louis Bleriot 5", "ad2":"", "ad3":"", "lat":"50.65596", "lng":"5.47754"}, "PHF1": {"countryCode":"DE", "countryName":"GERMANY", "depotName":"Parker Hannifin", "postcode":"33719", "town":"Bielefeld", "ad1":"Friedrich Hagemann 56", "ad2":"", "ad3":"", "lat":"52.0156924", "lng":"8.5880631"}, "POZ": {"countryCode":"PL", "countryName":"POLAND", "depotName":"POZNAN", "postcode":"61-315", "town":"POZNAN", "ad1":"UL WYBIEG 8", "ad2":"", "ad3":"", "lat":"52.3631551", "lng":"16.9886308"}, "PRG": {"countryCode":"CZ", "countryName":"CZECH REPUBLIC", "depotName":"PRAGUE", "postcode":"252 19", "town":"CHRASTANY", "ad1":"PWBC", "ad2":"", "ad3":"", "lat":"50.0393911", "lng":"14.2476227"}, "PRN": {"countryCode":"XK", "countryName":"KOSOVO", "depotName":"PRISTINA", "postcode":"38000", "town":"PRISHTINE", "ad1":"RR. UKSHIN HOTI", "ad2":"", "ad3":"", "lat":"42.6479208", "lng":"21.113473"}, "PROM": {"countryCode":"DE", "countryName":"GERMANY", "depotName":"Promega", "postcode":"68199", "town":"Mannheim", "ad1":"Pfingstweidstrasse 23", "ad2":"", "ad3":"", "lat":"49.4611093", "lng":"8.4997499"}, "PUT1": {"countryCode":"DE", "countryName":"GERMANY", "depotName":"Swap Location Puttgarden", "postcode":"23769", "town":"Fehmarn", "ad1":"Fahrhafen Puttgarden 1", "ad2":"", "ad3":"", "lat":"54.5020804", "lng":"11.2295937"}, "QAR": {"countryCode":"NL", "countryName":"NETHERLANDS", "depotName":"ARNHEM HUB", "postcode":"6921 RB", "town":"DUIVEN", "ad1":"EXPRESS 1", "ad2":"", "ad3":"", "lat":"51.96532", "lng":"6.02063"}, "QDU": {"countryCode":"DE", "countryName":"GERMANY", "depotName":"NEUSS", "postcode":"41460", "town":"NEUSS", "ad1":"HEERDTERBUSCHSTRASSE 8A", "ad2":"", "ad3":"", "lat":"51.2223963", "lng":"6.7038185"}, "QFC": {"countryCode":"FR", "countryName":"FRANCE", "depotName":"CRETEIL", "postcode":"94000", "town":"CRETEIL", "ad1":"20-22 CHEMIN DES MARAIS", "ad2":"", "ad3":"", "lat":"48.7766281", "lng":"2.42845"}, "QPA": {"countryCode":"IT", "countryName":"ITALY", "depotName":"PADOVA", "postcode":"35100", "town":"PADOVA", "ad1":"VIA INGHILTERRA 16", "ad2":"", "ad3":"", "lat":"45.3838787", "lng":"11.9214911"}, "REI1": {"countryCode":"DE", "countryName":"GERMANY", "depotName":"SWAP LOCATION INGOLSTADT", "postcode":"85084", "town":"85084 REICHERTSHOFEN", "ad1":"LOGISTIKRING 1", "ad2":"", "ad3":"", "lat":"48.6431481", "lng":"11.5197359"}, "RH3": {"countryCode":"FR", "countryName":"FRANCE", "depotName":"REIMS INTERNATIONAL", "postcode":"51689", "town":"REIMS", "ad1":"28 RUE DU VAL CLAIR", "ad2":"", "ad3":"", "lat":"49.2203", "lng":"4.11273"}, "RIX": {"countryCode":"LV", "countryName":"LATVIA", "depotName":"RIGA", "postcode":"LV-2167", "town":"MARUPE", "ad1":"PLIENCIEMA 11", "ad2":"", "ad3":"", "lat":"56.8959145", "lng":"24.0456287"}, "RNS": {"countryCode":"FR", "countryName":"FRANCE", "depotName":"RENNES INTERNATIONAL", "postcode":"35116", "town":"SAINT JACQUES DE LA LANDE", "ad1":"11 RUE JACQUELINE AURIOL", "ad2":"", "ad3":"", "lat":"48.0752085", "lng":"-1.7321963"}, "RO5": {"countryCode":"BG", "countryName":"BULGARIA", "depotName":"ROUSSE", "postcode":"7012", "town":"ROUSSE", "ad1":"9 TETZ IZTOK STR.", "ad2":"", "ad3":"", "lat":"43.8417951", "lng":"25.9537709"}, "RTM": {"countryCode":"NL", "countryName":"NETHERLANDS", "depotName":"ROTTERDAM MAIN DEPOT", "postcode":"3316 LN", "town":"DORDRECHT", "ad1":"SAFFIER 2", "ad2":"", "ad3":"", "lat":"51.7625429", "lng":"4.631785"}, "SBG": {"countryCode":"DE", "countryName":"GERMANY", "depotName":"STRAUBING", "postcode":"94377", "town":"STEINACH", "ad1":"HOCHSTRASSE 9", "ad2":"", "ad3":"", "lat":"48.9463975", "lng":"12.6172733"}, "SCB1": {"countryCode":"DE", "countryName":"GERMANY", "depotName":"Schmitz Cargobull AG", "postcode":"48691", "town":"Vreden", "ad1":"Stadtlohner Strasse 70", "ad2":"", "ad3":"", "lat":"52.02482", "lng":"6.8267"}, "SCN": {"countryCode":"DE", "countryName":"GERMANY", "depotName":"SAARBRUECKEN", "postcode":"66386", "town":"ST  INGBERT", "ad1":"AM GUETERBAHNHOF 14", "ad2":"", "ad3":"", "lat":"49.2723773", "lng":"7.1009771"}, "SED1": {"countryCode":"NL", "countryName":"NETHERLANDS", "depotName":"Sensormatic European Distribut", "postcode":"6101", "town":"Echt", "ad1":"Voltaweg 20", "ad2":"", "ad3":"", "lat":"51.1161838", "lng":"5.8841783"}, "SET1": {"countryCode":"DE", "countryName":"GERMANY", "depotName":"SWAP POINT SAUER", "postcode":"92726", "town":"WAIDHAUS", "ad1":"FRANKENREUTH 77A", "ad2":"", "ad3":"", "lat":"49.6524203", "lng":"12.5108227"}, "SGE": {"countryCode":"DE", "countryName":"GERMANY", "depotName":"SIEGEN", "postcode":"57234", "town":"WILNSDORF", "ad1":"ESSENER STRASSE 18", "ad2":"", "ad3":"", "lat":"50.824168", "lng":"8.0783316"}, "SJJ": {"countryCode":"BA", "countryName":"BOSNIA AND HERZEGOVINA", "depotName":"SARAJEVO", "postcode":"71000", "town":"SARAJEVO", "ad1":"BRACE BALJIC 1A", "ad2":"", "ad3":"", "lat":"43.85099", "lng":"18.36918"}, "SKG": {"countryCode":"GR", "countryName":"GREECE", "depotName":"THESSALONIKI", "postcode":"570 01", "town":"THESSALONIKI", "ad1":"LAERTOU & CHALKIS STR.", "ad2":"", "ad3":"", "lat":"40.64129", "lng":"22.93352"}, "SKP": {"countryCode":"MK", "countryName":"MACEDONIA, THE FORMER YUGOSLAV", "depotName":"SKOPJE", "postcode":"1000", "town":"SKOPJE", "ad1":"KACANICKI PAT BB", "ad2":"", "ad3":"", "lat":"41.9843974", "lng":"21.4547905"}, "SLS1": {"countryCode":"FR", "countryName":"FRANCE", "depotName":"Swap Location Eurotunnel", "postcode":"62904", "town":"coquelles Cedex", "ad1":"B.P. 69", "ad2":"", "ad3":"", "lat":"50.9263073", "lng":"1.8084758"}, "SLT2": {"countryCode":"HU", "countryName":"HUNGARY", "depotName":"Swaplocation Transemex KFT", "postcode":"2330", "town":"Dunaharaszti", "ad1":"Jedlik �nyos �t 27", "ad2":"", "ad3":"", "lat":"47.3578313", "lng":"19.1203501"}, "SMC5": {"countryCode":"BE", "countryName":"BELGIUM", "depotName":"SMC PNEUMATIC", "postcode":"2160", "town":"WOMMELGEM", "ad1":"NIJVERHEIDSTRAAT  92", "ad2":"", "ad3":"", "lat":"51.2103751", "lng":"4.5085619"}, "SN5": {"countryCode":"FR", "countryName":"FRANCE", "depotName":"GENAS", "postcode":"69740", "town":"GENAS", "ad1":"66 RUE DES FRERES MONTGOLFIER", "ad2":"", "ad3":"", "lat":"45.72024", "lng":"4.98668"}, "SOF": {"countryCode":"BG", "countryName":"BULGARIA", "depotName":"SOFIA", "postcode":"1574", "town":"SOFIA", "ad1":"35 NEDLCHO BONCHEV BLVD", "ad2":"", "ad3":"", "lat":"42.69499", "lng":"23.32111"}, "SON1": {"countryCode":"CZ", "countryName":"CZECH REPUBLIC", "depotName":"Sony DADC CZ s.r.o.", "postcode":"33209", "town":"Stenovice", "ad1":"Dobranska 545", "ad2":"", "ad3":"", "lat":"49.6817287", "lng":"13.4195372"}, "SP8": {"countryCode":"NL", "countryName":"NETHERLANDS", "depotName":"AMSTERDAM DEPOT", "postcode":"1119NT", "town":"SCHIPHOL-RIJK", "ad1":"BELLSINGEL 51", "ad2":"", "ad3":"", "lat":"52.2788386", "lng":"4.7652327"}, "STN": {"countryCode":"GB", "countryName":"UNITED KINGDOM", "depotName":"STANSTED AIR HUB", "postcode":"CM24 1QJ", "town":"ESSEX", "ad1":"UNIT E CARGO TERMINAL", "ad2":"", "ad3":"", "lat":"51.8872969", "lng":"0.2490494"}, "STO": {"countryCode":"SE", "countryName":"SWEDEN", "depotName":"STOCKHOLM", "postcode":"194 43", "town":"UPPLANDS VASBY", "ad1":"SATURNUSVAGEN 3", "ad2":"", "ad3":"", "lat":"59.5053672", "lng":"17.8895528"}, "SXB": {"countryCode":"FR", "countryName":"FRANCE", "depotName":"STRASBOURG INTERNATIONAL", "postcode":"67118", "town":"GEISPOLSHEIM GARE", "ad1":"RUE DES IMPRIMEURS", "ad2":"", "ad3":"", "lat":"48.5368793", "lng":"7.678331"}, "SZG": {"countryCode":"AT", "countryName":"AUSTRIA", "depotName":"SALZBURG", "postcode":"5101", "town":"BERGHEIM", "ad1":"GEWERBEZENTRUM AUPOINT 23", "ad2":"", "ad3":"", "lat":"47.8627742", "lng":"13.0062026"}, "SZZ": {"countryCode":"PL", "countryName":"POLAND", "depotName":"SZCZECIN", "postcode":"70-893", "town":"SZCZECIN", "ad1":"BALINSKIEGO 8", "ad2":"", "ad3":"", "lat":"53.3789", "lng":"14.69222"}, "TBS": {"countryCode":"GE", "countryName":"GEORGIA", "depotName":"TBILISI", "postcode":"0178", "town":"TBILISI", "ad1":"25 AGMASHENEBELI AVE", "ad2":"", "ad3":"", "lat":"41.6696592", "lng":"44.9631649"}, "TGD": {"countryCode":"ME", "countryName":"MONTENEGRO", "depotName":"PODGORICA", "postcode":"81000", "town":"PODGORICA", "ad1":"CIJEVNA BB", "ad2":"", "ad3":"", "lat":"42.4386394", "lng":"19.265846"}, "TIA": {"countryCode":"AL", "countryName":"ALBANIA", "depotName":"TIRANA", "postcode":"", "town":"TIRANA", "ad1":"RR.DURRESIT", "ad2":"", "ad3":"", "lat":"41.3343892", "lng":"19.8070857"}, "TIM3": {"countryCode":"DE", "countryName":"GERMANY", "depotName":"Time Matters", "postcode":"60549", "town":"Frankfurt am Main", "ad1":"Cargo City Nord 455d", "ad2":"", "ad3":"", "lat":"50.0385929", "lng":"8.5257357"}, "TKU": {"countryCode":"FI", "countryName":"FINLAND", "depotName":"TURKU", "postcode":"20360", "town":"TURKU", "ad1":"LENTORAHDINTIE 141", "ad2":"", "ad3":"", "lat":"60.50859", "lng":"22.26686"}, "TLL": {"countryCode":"EE", "countryName":"ESTONIA", "depotName":"TALLINN", "postcode":"11415", "town":"TALLINN", "ad1":"KESK-SOJAMAE 10A", "ad2":"", "ad3":"", "lat":"59.4189287", "lng":"24.8109127"}, "TSR": {"countryCode":"RO", "countryName":"ROMANIA", "depotName":"TIMISOARA", "postcode":"307200", "town":"GHIRODA", "ad1":"HELLA STREET NO 5", "ad2":"", "ad3":"", "lat":"45.7874352", "lng":"21.316719"}, "TVH1": {"countryCode":"BE", "countryName":"BELGIUM", "depotName":"TVH FORKLIFT PLANT W", "postcode":"8790", "town":"Waregem", "ad1":"Brabantstraat 15", "ad2":"", "ad3":"", "lat":"50.8608302", "lng":"3.4190767"}, "TVH2": {"countryCode":"BE", "countryName":"BELGIUM", "depotName":"TVH FORKLIFT PLANT S", "postcode":"8790", "town":"Waregem", "ad1":"Textielstraat 20", "ad2":"", "ad3":"", "lat":"50.8592575", "lng":"3.397224"}, "TYC9": {"countryCode":"CZ", "countryName":"CZECH REPUBLIC", "depotName":"Tyco Fire & Security CZ S.R.O.", "postcode":"67902", "town":"Rajecko", "ad1":"Osvobozeni 363", "ad2":"", "ad3":"", "lat":"49.3950993", "lng":"16.6422192"}, "ULM": {"countryCode":"DE", "countryName":"GERMANY", "depotName":"ULM", "postcode":"89231", "town":"NEU-ULM", "ad1":"BOETTGERSTRASSE 18", "ad2":"", "ad3":"", "lat":"48.3910317", "lng":"10.044261"}, "URO": {"countryCode":"FR", "countryName":"FRANCE", "depotName":"ROUEN INTERNATIONAL", "postcode":"76800", "town":"ST ETIENNE DU ROUVRAY", "ad1":"RUE DES LONGS BOELS", "ad2":"", "ad3":"", "lat":"49.3855542", "lng":"1.1124538"}, "VCE": {"countryCode":"IT", "countryName":"ITALY", "depotName":"VENEZIA AIRPORT", "postcode":"30020", "town":"MARCON", "ad1":"VIA DELLE INDUSTRIE 30", "ad2":"", "ad3":"", "lat":"45.5471566", "lng":"12.290987"}, "VEU1": {"countryCode":"BE", "countryName":"BELGIUM", "depotName":"Swap location Veurne", "postcode":"8630", "town":"Veurne", "ad1":"Welvaartstraat 5", "ad2":"", "ad3":"", "lat":"51.0641913", "lng":"2.6770456"}, "VFI1": {"countryCode":"CZ", "countryName":"CZECH REPUBLIC", "depotName":"VF International", "postcode":"25066", "town":"Zdiby", "ad1":"Ke Zdibsku 193", "ad2":"", "ad3":"", "lat":"50.1754537", "lng":"14.4487016"}, "VGN": {"countryCode":"DE", "countryName":"GERMANY", "depotName":"VILLINGEN-SCHWENNINGEN", "postcode":"78652", "town":"DEISSLINGEN", "ad1":"BAARSTRASSE 6", "ad2":"", "ad3":"", "lat":"48.1053973", "lng":"8.6001492"}, "VGO": {"countryCode":"ES", "countryName":"SPAIN", "depotName":"VIGO", "postcode":"36400", "town":"MOS", "ad1":"CTRA. PORRINO-GONDOMAR KM.2", "ad2":"", "ad3":"", "lat":"42.2028173", "lng":"-8.6503096"}, "VIE": {"countryCode":"AT", "countryName":"AUSTRIA", "depotName":"VIENNA", "postcode":"1300", "town":"WIEN", "ad1":"CARGO NORD", "ad2":"", "ad3":"", "lat":"48.1272729", "lng":"16.5516415"}, "VLC": {"countryCode":"ES", "countryName":"SPAIN", "depotName":"VALENCIA", "postcode":"46210", "town":"PICANYA", "ad1":"AUTOVIA VALENCIA TORRENTE KM 2", "ad2":"", "ad3":"", "lat":"39.4420801", "lng":"-0.4260755"}, "VNO": {"countryCode":"LT", "countryName":"LITHUANIA", "depotName":"VILNIUS", "postcode":"LT-02189", "town":"VILNIUS", "ad1":"DARIAUS IR GIRENO 44", "ad2":"", "ad3":"", "lat":"54.6629378", "lng":"25.2734061"}, "WA1": {"countryCode":"PL", "countryName":"POLAND", "depotName":"WYPEDY ROAD HUB", "postcode":"05-090", "town":"WYPEDY", "ad1":"UL. ZDROJOWA 9", "ad2":"", "ad3":"", "lat":"52.1452712", "lng":"20.8857625"}, "WAW": {"countryCode":"PL", "countryName":"POLAND", "depotName":"WARSAW", "postcode":"05-090", "town":"WYPEDY", "ad1":"ZDROJOWA 9", "ad2":"", "ad3":"", "lat":"52.14434", "lng":"20.88557"}, "WFS1": {"countryCode":"FR", "countryName":"FRANCE", "depotName":"WFS (Handling agent for AA)", "postcode":"FR-95706", "town":"Roissy", "ad1":"rue du Pave 6", "ad2":"", "ad3":"", "lat":"49.0074648", "lng":"2.5381474"}, "WFSL": {"countryCode":"FR", "countryName":"FRANCE", "depotName":"WFS LXS", "postcode":"69125", "town":"Lyon Saint-Exup�ry", "ad1":"Zone de fret Cargoport 275", "ad2":"", "ad3":"", "lat":"45.72282", "lng":"5.08541"}, "WIN1": {"countryCode":"FR", "countryName":"FRANCE", "depotName":"Wincanton / Rhenus Logistics", "postcode":"FR-67000", "town":"Strasbourg", "ad1":"Rue de Chalon sur Saone 9", "ad2":"", "ad3":"", "lat":"48.5689088", "lng":"7.7889442"}, "WRO": {"countryCode":"PL", "countryName":"POLAND", "depotName":"WROCLAW", "postcode":"55-095", "town":"DLUGOLEKA", "ad1":"UL WROCLAWSKA 33D", "ad2":"", "ad3":"", "lat":"51.1351916", "lng":"17.0800506"}, "XCP": {"countryCode":"FR", "countryName":"FRANCE", "depotName":"COMPIEGNE INTERNATIONAL", "postcode":"60880", "town":"LE MEUX", "ad1":"RUE DU BUISSON DU ROI", "ad2":"", "ad3":"", "lat":"49.3549601", "lng":"2.7580021"}, "ZA6": {"countryCode":"SK", "countryName":"SLOVAKIA", "depotName":"ZILINA", "postcode":"01001", "town":"ZILINA", "ad1":"MARTINA RAZUSA", "ad2":"", "ad3":"", "lat":"49.21684", "lng":"18.72739"}, "ZAG": {"countryCode":"HR", "countryName":"CROATIA", "depotName":"ZAGREB", "postcode":"10020", "town":"NOVI ZAGREB", "ad1":"IN TIME D O O", "ad2":"", "ad3":"", "lat":"45.7629575", "lng":"15.9724381"}, "ZAZ": {"countryCode":"ES", "countryName":"SPAIN", "depotName":"ZARAGOZA", "postcode":"50820", "town":"SAN JUAN DE MOZARRIFAR", "ad1":"CALLE F 13-20", "ad2":"", "ad3":"", "lat":"41.7198914", "lng":"-0.8512864"}, "ZMU": {"countryCode":"DE", "countryName":"GERMANY", "depotName":"MUNICH", "postcode":"85399", "town":"HALLBERGMOOS", "ad1":"LINDBERGHSTRASSE 12", "ad2":"", "ad3":"", "lat":"48.33391", "lng":"11.73383"}, "ZRH": {"countryCode":"CH", "countryName":"SWITZERLAND", "depotName":"ZURICH", "postcode":"5033", "town":"BUCHS", "ad1":"AMSLERACHERWEG 8", "ad2":"", "ad3":"", "lat":"47.3933019", "lng":"8.0698667"}, "ZWO": {"countryCode":"NL", "countryName":"NETHERLANDS", "depotName":"ZWOLLE", "postcode":"8028 PK", "town":"ZWOLLE", "ad1":"MINDENSTRAAT 5", "ad2":"", "ad3":"", "lat":"52.5337926", "lng":"6.1716767"}, "ZWS": {"countryCode":"DE", "countryName":"GERMANY", "depotName":"KORNTAL MUENCHINGEN", "postcode":"70825", "town":"KORNTAL-MUENCHINGEN", "ad1":"LINGWIESENSTRASSE 7", "ad2":"", "ad3":"", "lat":"48.8492702", "lng":"9.1150338"}}'>
+            <span id="lblTour" class="label">Enter your tour string</span>
+            <input type="text" id="tourString" value=''>
+            <input id="btTour" class="button" onclick="tour();" value="Submit" type="submit">
+        </div>
+
+
+        <div id="opt">
+            <input type="radio" id="f" value="f" />Import a file
+            <input type="radio" id="ts" value="ts" />Search tour
+        </div>
+    </div>       
+    
+    <span id="lblDirections-panel" class="label">Route</span>
+    <div id="directions-panel"></div>
+    <span id="lblExcel-panel" class="label">Imported</span>
+    <div id="excel-panel"></div>
+
+    <!--<script>
+        document.getElementById('excelfile').onchange = function () {
+            //ExportToTable();
+            readExcel();
+        }
+
+        function ExportToTable() {
+            var regex = /^([a-zA-Z0-9\s_\\.\-:])+(.xlsx|.xls)$/;
+            /*Checks whether the file is a valid excel file*/
+            if (regex.test($("#excelfile").val().toLowerCase())) {
+                var xlsxflag = false; /*Flag for checking whether excel is .xls format or .xlsx format*/
+                if ($("#excelfile").val().toLowerCase().indexOf(".xlsx") > 0) {
+                    xlsxflag = true;
+                }
+                /*Checks whether the browser supports HTML5*/
+                if (typeof (FileReader) != "undefined") {
+                    var reader = new FileReader();
+                    reader.onload = function (e) {
+                        var data = e.target.result;
+                        /*Converts the excel data in to object*/
+                        if (xlsxflag) {
+                            var workbook = XLSX.read(data, { type: 'binary' });
+                        }
+                        else {
+                            var workbook = XLS.read(data, { type: 'binary' });
+                        }
+                        /*Gets all the sheetnames of excel in to a variable*/
+                        var sheet_name_list = workbook.SheetNames;
+
+                        var cnt = 0; /*This is used for restricting the script to consider only first sheet of excel*/
+                        sheet_name_list.forEach(function (y) { /*Iterate through all sheets*/
+                            /*Convert the cell value to Json*/
+                            if (xlsxflag) {
+                                var exceljson = XLSX.utils.sheet_to_json(workbook.Sheets[y]);
+                            }
+                            else {
+                                var exceljson = XLS.utils.sheet_to_row_object_array(workbook.Sheets[y]);
+                            }
+                            if (exceljson.length > 0 && cnt == 0) {
+                                //BindTable(exceljson, '#exceltable');
+                                BindExcel(exceljson, '#excel-panel');
+                                cnt++;
+                            }
+                        });
+                        $('#exceltable').show();
+                    }
+                    if (xlsxflag) {/*If excel file is .xlsx extension than creates a Array Buffer from excel*/
+                        reader.readAsArrayBuffer($("#excelfile")[0].files[0]);
+                    }
+                    else {
+                        reader.readAsBinaryString($("#excelfile")[0].files[0]);
+                    }
+                }
+                else {
+                    alert("Sorry! Your browser does not support HTML5!");
+                }
+            }
+            else {
+                alert("Please upload a valid Excel file!");
+            }
+        }
+        function BindExcel(jsondata, divid) {
+            $('#excel-panel').show();
+            $('#excel-panel').empty();
+            $('#lblExcel-panel').show();
+
+            for (var i = 0; i < jsondata.length; i++) {
+                $(divid).append("<div id='t" + i + "' class='t'></div>");
+                $('#t' + i).append("<div id='tourS" + i + "' class='tourS'  onclick='sendToMap(" + i + ")'>" + jsondata[i]["Scheduled Tourstring"].trim() + "</div>");
+                $('#t' + i).append("<div id='bp" + i + "' class='bp'>" + jsondata[i]["Scheduled Operator Code"].trim() + " - " + jsondata[i]["Scheduled Operator Name"].trim() + " (" + jsondata[i]["Cost Management Location ID"].trim() + ")</div>");
+                $('#t' + i).append("<div id='datTour" + i + "' class='datTour'>" + jsondata[i]["Tour ID"].trim() + " - " + jsondata[i]["Financial Date/Time"].trim() + " (" + jsondata[i]["Financial Week Number"].trim() + ") - " + jsondata[i]["Tour Cancellation Reason"].trim() + "</div>");
+            }
+            $("#info").html("Imported records: " + i );
+        }
+
+
+
+        function readExcel() {
+            $('#excel-panel').show();
+            $('#excel-panel').empty();
+            $('#lblExcel-panel').show();
+
+            var regex = /^([a-zA-Z0-9\s_\\.\-:])+(.xlsx|.xls)$/;
+            /*Checks whether the file is a valid excel file*/
+            if (regex.test($("#excelfile").val().toLowerCase())) {
+                var xlsxflag = false; /*Flag for checking whether excel is .xls format or .xlsx format*/
+                if ($("#excelfile").val().toLowerCase().indexOf(".xlsx") > 0) {
+                    xlsxflag = true;
+                }
+                /*Checks whether the browser supports HTML5*/
+                if (typeof (FileReader) != "undefined") {
+                    var reader = new FileReader();
+                    reader.onload = function (e) {
+                        var data = e.target.result;
+                        /*Converts the excel data in to object*/
+                        if (xlsxflag) {
+                            var workbook = XLSX.read(data, { type: 'binary' });
+                        }
+                        else {
+                            var workbook = XLS.read(data, { type: 'binary' });
+                        }
+
+                        var f = 3;                        
+                        var sheet_name = workbook.SheetNames[0];
+                        var worksheet = workbook.Sheets[sheet_name];                        
+                        var rowComp = worksheet['A' + f].v.trim();
+                        var ScheduledTourstring;
+                        var ScheduledOperatorCode;
+                        var ScheduledOperatorName;
+                        var CostManagementLocationId;
+                        var TourId;
+                        var DepDateTime;
+                        var ArrDateTime;
+                        var FinancialWeekNumber;
+                        var TourCancellationReason;
+                        var v = JSON.parse($("#hidHubs").val());
+                        var myLatLng2 = { lat: 48.8587741, lng: 2.2069771 };
+                        var map = new google.maps.Map(document.getElementById('map'), {
+                            zoom: 5,                            
+                            center: myLatLng2
+                        });
+                        var contentString = '';
+                        var loc;
+                        var ori;
+                        $('#excel-panel').append("<div id='cab_tot' class='cab'>Cancelled tours</div>");
+
+                        while (rowComp.trim() != ""){
+                            rowComp = worksheet['A' + f].v.trim();
+                            if (rowComp != '') {
+                                ScheduledTourstring = worksheet['H' + f].v.trim();
+                                ScheduledOperatorCode = worksheet['E' + f].v.trim();
+                                ScheduledOperatorName = worksheet['F' + f].v.trim();
+                                CostManagementLocationId = worksheet['A' + f].v.trim();
+                                TourId = worksheet['G' + f].v.trim();
+                                DepDateTime = worksheet['C' + f].w.trim();
+                                ArrDateTime = worksheet['D' + f].w.trim();
+                                FinancialWeekNumber = worksheet['B' + f].w.trim();
+                                TourCancellationReason = worksheet['J' + f].v.trim();
+                                ori = ScheduledTourstring.substring(0, 3);
+
+                                if (v[ori] != undefined) {
+                                    var myLatLng2 = { lat: + v[ori].lat, lng: + v[ori].lng };
+                                    var marker = new google.maps.Marker({
+                                        position: myLatLng2,
+                                        //label: k,
+                                        //icon: 'http://maps.google.com/mapfiles/ms/icons/yellow-dot.png',                    
+                                        map: map,                                        
+                                        title: '(' + ori + ") " + v[ori].depotName + '\n' + v[ori].postcode + " - " + v[ori].town + '(' + v[ori].countryCode + ')'                                        
+                                        //title: "(" + ori + ") " + v[ori].depotName
+                                    });
+                                    loc = '';
+                                    contentString = v[ori].countryName + " (" + v[ori].countryCode + ")";
+                                    var infowindow = new google.maps.InfoWindow({
+                                        content: contentString
+                                    });
+                                    marker.addListener('click', function () {
+                                        var geocoder = new google.maps.Geocoder;
+                                        geocodeLatLng(geocoder, map, marker.infowindow, this);
+                                        //infowindow.open(map, marker);
+                                        //map.setZoom(8);
+                                        //map.setCenter(marker.getPosition());
+                                    });
+                                }
+                                else {
+                                    loc = " - '" + ori + "' not found'";
+                                }
+                                
+                                $('#excel-panel').append("<div id='t" + f + "' class='t'></div>");
+                                $('#t' + f).append("<div id='tourS" + f + "' class='tourS'  onclick='sendToMap(" + f + ")'>" + ScheduledTourstring + "</div>");
+                                $('#t' + f).append("<div id='bp" + f + "' class='bp'>" + ScheduledOperatorCode + " - " + ScheduledOperatorName + " (" + CostManagementLocationId + ")" + loc + "</div>");
+                                $('#t' + f).append("<div id='datTour" + f + "' class='datTour'>" + TourId + " - " + "Departure: " + DepDateTime + " - " + "Arrival: " + ArrDateTime + " (Week: " + FinancialWeekNumber + ") - " + TourCancellationReason + "</div>");
+                                f = f + 1;
+                            }                            
+                        }
+                        if (worksheet['A' + (f + 1)].v.trim() == 'Cancelled Movements') {
+                            f = f + 3;
+                            rowComp = worksheet['A' + f].v.trim();
+                            var TourCanc;
+                            $('#excel-panel').append("<div id='cab_parc' class='cab'>Cancelled Movements</div>");                            
+
+                            while (rowComp.trim() != "") {
+                                rowComp = worksheet['A' + f].v.trim();
+                                ScheduledTourstring = worksheet['G' + f].v.trim();
+                                ScheduledOperatorCode = worksheet['D' + f].v.trim();
+                                ScheduledOperatorName = worksheet['E' + f].v.trim();
+                                CostManagementLocationId = worksheet['A' + f].v.trim();
+                                TourId = worksheet['H' + f].v.trim();
+                                DepDateTime = worksheet['K' + f].w.trim();
+                                ArrDateTime = worksheet['L' + f].w.trim();
+                                FinancialWeekNumber = worksheet['B' + f].w.trim();
+                                TourCanc = worksheet['I' + f].v.trim() + '>' + worksheet['J' + f].v.trim() + '<';
+                                if (worksheet['M' + f] == undefined) {
+                                    TourCancellationReason = '';
+                                }
+                                else {
+                                    TourCancellationReason = ' - ' + worksheet['M' + f].v.trim();
+                                }                                
+                                ori = ScheduledTourstring.substring(0, 3);
+                                if (v[ori] != undefined) {
+                                    var myLatLng2 = { lat: + v[ori].lat, lng: + v[ori].lng };
+                                    var marker = new google.maps.Marker({
+                                        position: myLatLng2,                                        
+                                        icon: 'http://maps.google.com/mapfiles/ms/icons/yellow-dot.png',                    
+                                        map: map,
+                                        title: '(' + ori + ") " + v[ori].depotName + '\n' + v[ori].postcode + " - " + v[ori].town + '(' + v[ori].countryCode + ')'                                        
+                                    });
+                                    loc = '';
+                                    contentString = v[ori].countryName + " (" + v[ori].countryCode + ")";
+                                    var infowindow = new google.maps.InfoWindow({
+                                        content: contentString
+                                    });
+                                    marker.addListener('click', function () {
+                                        var geocoder = new google.maps.Geocoder;
+
+                                        geocodeLatLng(geocoder, map, marker.infowindow, this);
+
+                                        //infowindow.open(map, marker);
+                                        //map.setZoom(8);
+                                        //map.setCenter(marker.getPosition());
+                                    });
+                                }
+                                else {
+                                    loc = " - '" + ori + "' not found'";
+                                }
+
+                                $('#excel-panel').append("<div id='t" + f + "' class='t'></div>");
+                                $('#t' + f).append("<div id='tourS" + f + "' class='tourS'  onclick='sendToMap(" + f + ")'>" + ScheduledTourstring + "</div>");
+                                $('#t' + f).append("<div id='canceledTour" + f + "' class='datTour'>Cancelled movement: " + TourCanc + "</div>");
+                                $('#t' + f).append("<div id='bp" + f + "' class='bp'>" + ScheduledOperatorCode + " - " + ScheduledOperatorName + " (" + CostManagementLocationId + ")" + loc + "</div>");
+                                $('#t' + f).append("<div id='datTour" + f + "' class='datTour'>" + TourId + " - " + "Departure: " + DepDateTime + " - " + "Arrival: " + ArrDateTime + " (Week: " + FinancialWeekNumber + ")" + TourCancellationReason + "</div>");
+                                
+                                f = f + 1;
+                            }
+                        }
+
+                        $('#exceltable').show();
+                    }    
+                    if (xlsxflag) {/*If excel file is .xlsx extension than creates a Array Buffer from excel*/
+                        reader.readAsArrayBuffer($("#excelfile")[0].files[0]);
+                    }
+                    else {
+                        reader.readAsBinaryString($("#excelfile")[0].files[0]);
+                    }
+                }
+                else {
+                    alert("Sorry! Your browser does not support HTML5!");
+                }
+            }
+            else {
+                alert("Please upload a valid Excel file!");
+            }
+        }
+
+
+        function geocodeLatLng(geocoder, map, infowindow, marker) {
+            var latlng = marker.position;
+            geocoder.geocode({ 'location': latlng }, function (results, status) {
+                if (status === 'OK') {
+                    if (results[1]) {
+                        map.setZoom(11);
+                        var infowindow = new google.maps.InfoWindow;
+                        infowindow.setContent(results[1].formatted_address);
+                        infowindow.open(map, marker);
+                        map.setCenter(marker.getPosition());
+                    } else {
+                        alert('No results found');
+                    }
+                } else {
+                    alert('Geocoder failed due to: ' + status);
+                }
+            });
+        }
+
+
+
+
+
+        function sendToMap(indice) {            
+            $('#tourString').val($('#tourS' + indice).text());
+            $('#btTour').click();
+        }        
+    </script>-->
+
+    <script>
+        document.getElementById('excelfile').onchange = function () {
+            readExcel();
+        }
+
+        function sendToMap(indice, letra) {
+            var l;
+            if (letra == 0) {
+                l = 'T'
+            }
+            else {
+                l = 'M'
+            }
+            $('#tourString').val($('#tour' + l + indice).text());
+            $('#btTour').click();
+        }
+
+        function initMap() {
+            if ($('#hidShowHubs').val() == 'false') {
+                $('#tourString').val('mad>bcn');
+                $('#hidShowHubs').val() == 'true';
+                tour();
+                return false;
+            }
+            
+            var myLatLng2 = { lat: 48.8587741, lng: 2.2069771 };            
+            var map = new google.maps.Map(document.getElementById('map'), {
+                zoom: 5,
+                center: myLatLng2
+            });
+
+            var v = JSON.parse($("#hidHubs").val());
+            var contentString = '';
+            
+            Object.keys(v).forEach(function (k) {
+                var myLatLng2 = { lat: + v[k].lat, lng: + v[k].lng };
+                var address = v[k].ad1 + " " + v[k].ad2 + " " + v[k].ad3;
+                address = address.trim();
+                var marker = new google.maps.Marker({
+                    position: myLatLng2,
+                    //label: k,
+                    //icon: 'http://maps.google.com/mapfiles/ms/icons/yellow-dot.png',                    
+                    map: map,
+                    title: '(' + k + ') ' + v[k].depotName + '\n' + address + '\n' + v[k].postcode + '-' + v[k].town + '(' + v[k].countryCode + ')'
+                });
+
+                //no chuta por la restricción de google - demasiadas consultas
+                //var geocoder = new google.maps.Geocoder;
+                //var infowindow = new google.maps.InfoWindow;
+                //geocoder.geocode({'location': myLatLng2 }, function (results, status) {
+                //    if (status === 'OK') {
+                //        if (results[1]) {
+                //            infowindow.setContent(results[1].formatted_address);
+                //        } else {
+                //            window.alert('No results found');
+                //        }
+                //    } else {
+                //        window.alert('Geocoder failed due to: ' + status);
+                //    }
+                //});
+
+
+                contentString = v[k].countryName + " (" + v[k].countryCode + ")";
+                var infowindow = new google.maps.InfoWindow({
+                    content: contentString
+                });
+                marker.addListener('click', function () {
+                    var geocoder = new google.maps.Geocoder;
+                    geocodeLatLng(geocoder, map, marker.infowindow, this);
+                });
+            });
+        }
+
+        function geocodeLatLng(geocoder, map, infowindow, marker) {
+            var latlng = marker.position;
+            geocoder.geocode({ 'location': latlng }, function (results, status) {
+                if (status === 'OK') {
+                    if (results[1]) {
+                        map.setZoom(11);
+                        var infowindow = new google.maps.InfoWindow;
+                        infowindow.setContent(results[1].formatted_address);
+                        infowindow.open(map, marker);
+                        map.setCenter(marker.getPosition());
+                    } else {
+                        alert('No results found');
+                    }
+                } else {
+                    alert('Geocoder failed due to: ' + status);
+                }
+            });
+        }
+
+        function tour() {
+            $("#info").html("");
+            $("#directions-panel").html("");
+            $("#directions-panel").hide();
+            $("#lblDirections-panel").hide();
+
+            if ($("#tourString").val() == "") {
+                return false;
+            }
+            var ts = $("#tourString").val();
+            if (ts.substring(ts.length - 1) == "<") {
+                ts = ts.slice(0, ts.length - 1);
+            }
+            var tours = ts.split('>');
+            var v = JSON.parse($("#hidHubs").val());
+            var comp;
+            var directionsService = new google.maps.DirectionsService;
+            var directionsDisplay = new google.maps.DirectionsRenderer;
+            var map = new google.maps.Map(document.getElementById('map'), {
+                zoom: 6,
+                center: { lat: 41.85, lng: -87.65 }
+            });
+            directionsDisplay.setMap(map);
+            var waypts = [];
+            var totDist = 0;
+            for (var i = 0; i < tours.length; i++) {
+                comp = v[tours[i].toUpperCase()];
+                if (comp == undefined) {
+                    $("#info").html("Hub '" + tours[i] + "' not found");
+                    window.scrollTo(0, 0);
+                    initMap();
+                    return false;
+                }
+                else {
+                    waypts.push({
+                        location: v[tours[i].toUpperCase()].lat + ", " + v[tours[i].toUpperCase()].lng,
+                        stopover: true
+                    });
+                }
+            }
+
+            directionsService.route({
+                origin: v[tours[0].toUpperCase()].lat + ", " + v[tours[0].toUpperCase()].lng,
+                destination: v[tours[tours.length - 1].toUpperCase()].lat + ", " + v[tours[tours.length - 1].toUpperCase()].lng,
+                waypoints: waypts,
+                optimizeWaypoints: false,
+                travelMode: 'DRIVING'
+            }, function (response, status) {
+                if (status === 'OK') {
+                    directionsDisplay.setDirections(response);
+                    var route = response.routes[0];
+                    $("#directions-panel").show();
+                    $("#lblDirections-panel").show();
+                    var summaryPanel = document.getElementById('directions-panel');
+                    summaryPanel.innerHTML = '';
+                    // For each route, display summary information.
+                    for (var i = 0; i < route.legs.length; i++) {
+                        var routeSegment = i + 1;
+                        summaryPanel.innerHTML += '<b>Route Segment: ' + routeSegment + '</b><br>';
+                        summaryPanel.innerHTML += route.legs[i].start_address + ' to ';
+                        summaryPanel.innerHTML += route.legs[i].end_address + '<br>';
+                        summaryPanel.innerHTML += route.legs[i].distance.text + '<br><br>';
+                        totDist = totDist + route.legs[i].distance.value;
+                    }
+                    //no ponemos las distancia, ya que no coincide google maps con la herramienta de ERN
+                    //$('#info').html($('#tourString').val().toUpperCase() + '   /   Total distance: ' + totDist / 1000 + ' km');
+                    $('#info').html($('#tourString').val().toUpperCase());
+                    $("html, body").animate({ scrollTop: 0 }, "slow");
+                } else {
+                    $("#info").html('Directions request failed due to ' + status);
+                }
+            });
+        }
+
+        function readExcel() {
+            $('#excel-panel').show();
+            $('#excel-panel').empty();
+            $('#lblExcel-panel').show();
+
+            var regex = /^([a-zA-Z0-9\s_\\.\-:])+(.xlsx|.xls)$/;
+            /*Checks whether the file is a valid excel file*/
+            if (regex.test($('#excelfile').val().toLowerCase())) {
+                var xlsxflag = false; /*Flag for checking whether excel is .xls format or .xlsx format*/
+                if ($('#excelfile').val().toLowerCase().indexOf('.xlsx') > 0) {
+                    xlsxflag = true;
+                }
+                /*Checks whether the browser supports HTML5*/
+                if (typeof (FileReader) != 'undefined') {
+                    var reader = new FileReader();
+                    reader.onload = function (e) {
+                        var data = e.target.result;
+                        /*Converts the excel data in to object*/
+                        if (xlsxflag) {
+                            var workbook = XLSX.read(data, { type: 'binary' });
+                        }
+                        else {
+                            var workbook = XLS.read(data, { type: 'binary' });
+                        }
+                        var f = 3;
+                        var sheet_name = workbook.SheetNames[0];
+                        var worksheet = workbook.Sheets[sheet_name];
+                        var rowComp = worksheet['A' + f].v.trim();
+                        var ScheduledTourstring;
+                        var ScheduledOperatorCode;
+                        var ScheduledOperatorName;
+                        var CostManagementLocationId;
+                        var TourId;
+                        var MovId;
+                        var DepDateTime;
+                        var ArrDateTime;
+                        var FinancialWeekNumber;
+                        var TourCancellationReason;
+                        var TourScheduledStartDateTime;
+                        var v = JSON.parse($('#hidHubs').val());
+                        var myLatLng2 = { lat: 48.8587741, lng: 2.2069771 };
+                        var map = new google.maps.Map(document.getElementById('map'), {
+                            zoom: 5,
+                            center: myLatLng2
+                        });
+                        var contentString = '';
+                        var loc;
+                        var ori;
+                        var iconColor;
+                        $('#excel-panel').append("<div id='cab_tot' class='cab'>Cancelled tours</div>");
+                        $('#excel-panel').append("<div id='lblT' class='lblF'><a id='lblT' class='datTour'>Filters</a></div>");
+                        $('#excel-panel').append("<div id='filterT' class='filters'></div>");
+                        $('#filterT').append("<div id='divDateT' class='f'></div>");                        
+                        $('#divDateT').append("<select id='selDateT' class='selT'></select>");
+                        $('#selDateT').append('<option value="-- All --" selected="selected">-- All --</option>');
+                        $('#filterT').append("<div id='divBPT' class='f'></div>");
+                        $('#divBPT').append("<select id='selBPT' class='selT'></select>");
+                        $('#selBPT').append('<option value="-- All --" selected="selected">-- All --</option>');
+                        var arrD = [];
+                        var arrBP = [];
+                        $('#excel-panel').append("<div id='t'></div>");
+
+                        $('.selT').change(function () {
+                            filter('t');
+                        });
+                        var jsonObj = [];
+                        var contT = 0;
+                        while (rowComp.trim() != "") {
+                            if (worksheet['A' + f] == undefined){
+                                break;
+                            }
+                            rowComp = worksheet['A' + f].v.trim();
+                            if (rowComp != '') {
+                                ScheduledTourstring = worksheet['H' + f].v.trim();
+                                ScheduledOperatorCode = worksheet['E' + f].v.trim();
+                                ScheduledOperatorName = worksheet['F' + f].v.trim();
+                                CostManagementLocationId = worksheet['A' + f].v.trim();                                
+                                TourId = worksheet['G' + f].v.trim();
+                                DepDateTime = worksheet['C' + f].w.trim();
+                                ArrDateTime = worksheet['D' + f].w.trim();
+                                FinancialWeekNumber = worksheet['B' + f].w.trim();
+                                TourCancellationReason = worksheet['J' + f].v.trim();
+                                ori = ScheduledTourstring.substring(0, 3);
+                                iconColor = 'red';
+                                if (v[ori] != undefined) {
+                                    //ponemos todas las fechas en el select si no existen
+                                    var existeDate = false;
+                                    var existeBP = false;
+                                    var dateC1;
+                                                                       
+                                    var ad = DepDateTime.split(' ');
+                                    dateC1 = ad[0] + ' ' + ad[1] + ' 20' + ad[2];
+
+                                    for (i = 0; i < arrD.length; i++) {
+                                        if (dateC1 == arrD[i]) {
+                                            existeDate = true;
+                                            break;
+                                        }
+                                    }                                    
+                                    if (existeDate == false) {
+                                        arrD.push(dateC1);                                        
+                                    }
+                                    for (i = 0; i < arrBP.length; i++) {
+                                        if (ScheduledOperatorCode + ' - ' + ScheduledOperatorName == arrBP[i]) {
+                                            existeBP = true;
+                                            break;
+                                        }
+                                    }
+                                    if (existeBP == false) {
+                                        arrBP.push(ScheduledOperatorCode + ' - ' + ScheduledOperatorName);
+                                    }
+                                    var existe = false;
+                                    for (var i = 0; i < jsonObj.length; i++) {                                    
+                                        if (jsonObj[i].depot == ori) {
+                                            existe = true;
+                                            jsonObj[i].tourIds.push(TourId + '(T)');
+                                            jsonObj[i].dateTourIds.push(DepDateTime);
+                                            break;
+                                        }                                        
+                                    }
+                                    if (existe == false) {                                    
+                                        var myObj = {
+                                            'depot': ori, 
+                                            'countryCode': v[ori].countryCode,
+                                            'countryName': v[ori].countryName,
+                                            'depotName': v[ori].depotName,
+                                            'postcode': v[ori].postcode,
+                                            'town': v[ori].town,
+                                            'ad1': v[ori].ad1,
+                                            'ad2': v[ori].ad2,
+                                            'ad3': v[ori].ad3,
+                                            'countryName': v[ori].countryName,
+                                            'lat': v[ori].lat,
+                                            'lng': v[ori].lng,
+                                            'tourIds': [TourId + '(T)'],
+                                            'dateTourIds': [DepDateTime],
+                                            'DepDateTime': DepDateTime,
+                                            'ArrDateTime': ArrDateTime,
+                                            'ScheduledOperatorCode': ScheduledOperatorCode,
+                                            'ScheduledOperatorName': ScheduledOperatorName,
+                                            'iconColor': iconColor 
+                                        };                                                                                                                        
+                                        jsonObj.push(myObj);
+                                    }
+                                    loc = '';
+                                }
+                                else {
+                                    loc = " - '" + ori + "' not found'";
+                                }                                
+                                $('#t').append("<div id='t" + contT + "' class='t'></div>");                                
+                                $('#t' + contT).append("<div id='tourT" + contT + "' class='tourS'  onclick='sendToMap(" + contT + ", 0)'>" + ScheduledTourstring + "</div>");
+                                $('#t' + contT).append("<div id='bpT" + contT + "' class='bp'>" + ScheduledOperatorCode + " - " + ScheduledOperatorName + " (" + CostManagementLocationId + ")" + loc + "</div>");
+                                $('#t' + contT).append("<div id='datTourT" + contT + "' class='datTour'>" + TourId + " - " + "<u>Departure:</u> " + DepDateTime + " - " + "<u>Arrival:</u> " + ArrDateTime + " (<u>Week:</u> " + FinancialWeekNumber + ") - " + TourCancellationReason + "</div>");
+                                f = f + 1;
+                                contT = contT + 1;
+                            }
+                        }
+                        if (worksheet['A' + (f + 1)].v.trim() == 'Cancelled Movements') {
+                            f = f + 3;
+                            if (worksheet['A' + f] == undefined) {
+                                rowComp = '';
+                            }
+                            else {
+                                rowComp = worksheet['A' + f].v.trim();
+                            }                            
+                            var TourCanc;
+                            $('#excel-panel').append("<div id='cab_parc' class='cab'>Cancelled Movements</div>");
+                            $('#excel-panel').append("<div id='lblM'><a id='lblM' class='datTour'>Filters</a></div>");
+                            $('#excel-panel').append("<div id='filterM' class='filters'></div>");
+                            $('#filterM').append("<div id='divDateM' class='f'></div>");
+                            $('#divDateM').append("<select id='selDateM' class='selM'></select>");
+                            $('#selDateM').append('<option value="-- All --" selected="selected">-- All --</option>');
+                            $('#filterM').append("<div id='divBPM' class='f'></div>");
+                            $('#divBPM').append("<select id='selBPM' class='selM'></select>");
+                            $('#selBPM').append('<option value="-- All --" selected="selected">-- All --</option>');
+                            var arrDM = [];
+                            var arrBPM = [];
+                            $('#excel-panel').append("<div id='m'></div>");
+
+                            $('.selM').change(function () {
+                                filter('m');
+                            });
+                            var contM = 0;
+                            while (rowComp.trim() != "") {
+                                if (worksheet['A' + f] == undefined) {
+                                    break;
+                                }
+                                rowComp = worksheet['A' + f].v.trim();
+                                ScheduledTourstring = worksheet['G' + f].v.trim();
+                                ScheduledOperatorCode = worksheet['D' + f].v.trim();
+                                ScheduledOperatorName = worksheet['E' + f].v.trim();
+                                CostManagementLocationId = worksheet['A' + f].v.trim();
+                                TourId = worksheet['F' + f].v.trim();
+                                MovId = worksheet['H' + f].v.trim();
+                                DepDateTime = worksheet['K' + f].w.trim();
+                                ArrDateTime = worksheet['L' + f].w.trim();
+                                FinancialWeekNumber = worksheet['B' + f].w.trim();
+                                TourCanc = worksheet['I' + f].v.trim() + '>' + worksheet['J' + f].v.trim() + '<';
+                                TourScheduledStartDateTime = worksheet['C' + f].w.trim();
+                                iconColor = 'yellow';
+                                if (worksheet['M' + f] == undefined) {
+                                    TourCancellationReason = '';
+                                }
+                                else {
+                                    TourCancellationReason = ' - ' + worksheet['M' + f].v.trim();
+                                }                                
+                                ori = worksheet['I' + f].w.trim();
+                                if (v[ori] != undefined) {
+                                    //ponemos todas las fechas en el select si no existen
+                                    var existeDateM = false;
+                                    var existeBPM = false;
+                                    var dateC1M;
+                                    var adM = DepDateTime.split(' ');
+                                    dateC1M = adM[0] + ' ' + adM[1] + ' 20' + adM[2];
+                                    for (i = 0; i < arrDM.length; i++) {
+                                        if (dateC1M == arrDM[i]) {
+                                            existeDateM = true;
+                                            break;
+                                        }
+                                    }
+                                    if (existeDateM == false) {
+                                        arrDM.push(dateC1M);
+                                    }
+                                    for (i = 0; i < arrBPM.length; i++) {
+                                        if (ScheduledOperatorCode + ' - ' + ScheduledOperatorName == arrBP[i]) {
+                                            existeBPM = true;
+                                            break;
+                                        }
+                                    }
+                                    if (existeBPM == false) {
+                                        arrBPM.push(ScheduledOperatorCode + ' - ' + ScheduledOperatorName);
+                                    }
+                                    var existe = false;
+                                    for (var i = 0; i < jsonObj.length; i++) {
+                                        if (jsonObj[i].depot == ori) {
+                                            existe = true;
+                                            jsonObj[i].tourIds.push(TourId + '(M)');
+                                            jsonObj[i].dateTourIds.push(DepDateTime);
+                                            if (jsonObj[i].iconColor == 'red') {
+                                                jsonObj[i].iconColor = 'blue';
+                                            }
+                                            break;
+                                        }
+                                    }
+                                    if (existe == false) {
+                                        var myObj = {
+                                            'depot': ori,
+                                            'countryCode': v[ori].countryCode,
+                                            'countryName': v[ori].countryName,
+                                            'depotName': v[ori].depotName,
+                                            'postcode': v[ori].postcode,
+                                            'town': v[ori].town,
+                                            'ad1': v[ori].ad1,
+                                            'ad2': v[ori].ad2,
+                                            'ad3': v[ori].ad3,
+                                            'countryName': v[ori].countryName,
+                                            'lat': v[ori].lat,
+                                            'lng': v[ori].lng,
+                                            'tourIds': [TourId + '(M)'],
+                                            'dateTourIds': [DepDateTime],
+                                            'DepDateTime': DepDateTime,
+                                            'ArrDateTime': ArrDateTime,
+                                            'ScheduledOperatorCode': ScheduledOperatorCode,
+                                            'ScheduledOperatorName': ScheduledOperatorName,
+                                            'iconColor': iconColor
+                                        };
+                                        jsonObj.push(myObj);
+                                    }                                    
+                                    loc = '';
+                                }
+                                else {
+                                    loc = " - '" + ori + "' not found'";
+                                }
+                                var vDiv = 'm';
+                                $('#m').append("<div id='m" + contM + "' class='t'></div>");
+                                $('#m' + contM).append("<div id='tourM" + contM + "' class='tourS'  onclick='sendToMap(" + contM + ",1)'>" + ScheduledTourstring + "</div>");
+                                $('#m' + contM).append("<div id='bpM" + contM + "' class='bp'>" + ScheduledOperatorCode + " - " + ScheduledOperatorName + " (" + CostManagementLocationId + ")" + loc + "</div>");
+                                $('#m' + contM).append("<div id='cancM" + contM + "' class='cancelledTour'><u>Cancelled movement:</u> " + TourCanc + "</div>");
+                                $('#m' + contM).append("<div id='datTourM" + contM + "' class='datTour'><u>Movement Id:</u> " + MovId + " - " + "<u>Departure:</u> " + DepDateTime + " - " + "<u>Arrival:</u> " + ArrDateTime + " (<u>Week:</u> " + FinancialWeekNumber + ")" + TourCancellationReason + "</div>");
+                                $('#m' + contM).append("<div id='dat2TourM" + contM + "' class='datTour'><u>Tour Id:</u> " + TourId + " - " + "<u>Tour Scheduled Start Date/Time (UTC):</u> " + TourScheduledStartDateTime + "</div>");
+                                f = f + 1;
+                                contM = contM + 1;
+                            }
+                        }
+                        //load select
+                        for (i = 0; i < arrD.length; i++) {
+                            $("#selDateT").append("<option value='" + arrD[i] + "'>" + arrD[i] + "</option>");
+                        }
+                        for (i = 0; i < arrBP.length; i++) {
+                            $("#selBPT").append("<option value='" + arrBP[i] + "'>" + arrBP[i] + "</option>");
+                        }
+                        for (i = 0; i < arrDM.length; i++) {
+                            $("#selDateM").append("<option value='" + arrDM[i] + "'>" + arrDM[i] + "</option>");
+                        }
+                        for (i = 0; i < arrBPM.length; i++) {
+                            $("#selBPM").append("<option value='" + arrBPM[i] + "'>" + arrBPM[i] + "</option>");
+                        }                        
+                        //all markers
+                        var strT;
+                        var title;
+                        var icon;
+                        var address;
+                        for (i = 0; i < jsonObj.length; i++ ){
+                            myLatLng2 = { lat: + jsonObj[i].lat, lng: + jsonObj[i].lng };
+                            strT = '';
+                            for (j = 0; j < jsonObj[i].tourIds.length; j++){
+                                strT = strT + jsonObj[i].tourIds[j] + ' - DepDate: ' + jsonObj[i].dateTourIds[j] + '\n';
+                            }
+                            address = jsonObj[i].ad1 + " " + jsonObj[i].ad2 + " " + jsonObj[i].ad3;
+                            address = address.trim();
+                            title = '(' + jsonObj[i].depot + ") " + jsonObj[i].depotName + '\n' + address + '\n' + jsonObj[i].postcode + " - " + jsonObj[i].town + '(' + jsonObj[i].countryCode + ')';
+                            title = title + '\n' + strT;
+                            icon = 'http://maps.google.com/mapfiles/ms/icons/' + jsonObj[i].iconColor + '-dot.png';
+                            var marker = new google.maps.Marker({
+                                position: myLatLng2,                                
+                                icon: icon,                    
+                                map: map,
+                                title: title
+                            });
+                            loc = '';
+                            contentString = jsonObj[i].countryName + " (" + jsonObj[i].countryCode + ")";
+                            var infowindow = new google.maps.InfoWindow({
+                                content: contentString
+                            });
+                            marker.addListener('click', function () {
+                                var geocoder = new google.maps.Geocoder;
+                                geocodeLatLng(geocoder, map, marker.infowindow, this);                                
+                            });
+                        }
+                        $('#exceltable').show();
+                    }
+                    if (xlsxflag) {/*If excel file is .xlsx extension than creates a Array Buffer from excel*/
+                        reader.readAsArrayBuffer($("#excelfile")[0].files[0]);
+                    }
+                    else {
+                        reader.readAsBinaryString($("#excelfile")[0].files[0]);
+                    }
+                }
+                else {
+                    alert('Sorry! Your browser does not support HTML5!');
+                }
+            }
+            else {
+                alert('Please upload a valid Excel file!');
+            }
+        }
+
+        function filter(letra) {            
+            var fec;
+            var fecD;
+            var cd;
+            var bp;            
+            var valueBP;
+            var valueF = $('#selDate' + letra.toUpperCase()).val();
+            if ($('#selBP' + letra.toUpperCase()).val() == '-- All --') {
+                valueBP = '-- All --';
+            }
+            else {
+                valueBP = $('#selBP' + letra.toUpperCase()).val().substring(0, 7);
+            }
+            
+            
+            for (i = 0; i < $('#' + letra + ' >div').length; i++) {                
+                bp = $('#bp' + letra.toUpperCase() + i).text().substring(0, 7);                
+                if (letra == 't') {
+                    fec = $('#datTourT' + i).text().substring($('#datTourT' + i).text().indexOf(':') + 2, 40).trim();
+                    cd = fec.split(' ');
+                    fecD = cd[0] + ' ' + cd[1] + ' 20' + cd[2];
+                }
+                else {                    
+                    fec = $('#datTourM' + i).text().substring($('#datTourM' + i).text().indexOf('Departure:') + 10, 52).trim();
+                    cd = fec.split(' ');
+                    fecD = cd[0] + ' ' + cd[1] + ' 20' + cd[2];
+                }
+                if (valueF == '-- All --') {
+                    if (valueBP == '-- All --') {
+                        $('#' + letra + i).show();
+                    }
+                    else {
+                        if (valueBP == bp) {
+                            $('#' + letra + i).show();
+                        }
+                        else {
+                            $('#' + letra + i).hide();
+                        }
+                    }
+                }
+                else {
+                    if (valueBP == '-- All --') {
+                        if (valueF == fecD) {
+                            $('#' + letra + i).show();
+                        }
+                        else {
+                            $('#' + letra + i).hide();
+                        }
+                    }
+                    else {
+                        if (valueBP == bp) {
+                            if (valueF == fecD) {
+                                $('#' + letra + i).show();
+                            }
+                            else {
+                                $('#' + letra + i).hide();
+                            }
+                        }
+                        else {
+                            $('#' + letra + i).hide();
+                        }
+                    }
+                }
+            }
+        }
+
+    </script>
+    <script>
+        //para sacar geolocalización con las direcciones de un csv
+        //document.getElementById('csv').onchange = function () {
+        //    var file = this.files[0];
+        //    var reader = new FileReader();
+        //    reader.onload = function (progressEvent) {
+        //        // Entire file
+        //        //console.log(this.result);
+        //        // By lines
+        //        var lines = this.result.split('\n');
+        //        for (var line = 0; line < lines.length; line++) {
+        //            document.getElementById('res').innerHTML = document.getElementById('res').innerHTML + lines[line];
+
+        //            var elementos = lines[line].split("|");
+        //            //var address = elementos[1] + " - " + elementos[4] + " - " + elementos[5] + " - " + elementos[6] + " - " + elementos[7] + " - " + elementos[8];
+        //            var address = elementos[4] + " - " + elementos[8] + " - " + elementos[7] + " - " + elementos[1] + "<br>";
+        //            var geocoder = new google.maps.Geocoder();
+        //            geocoder.geocode({ 'address': address }, geocodeResult2);
+        //        }
+        //    };
+        //    reader.readAsText(file);
+        //};
+
+        //function geocodeResult2(results, status) {
+        //    // Verificamos el estatus
+        //    if (status == 'OK') {
+        //        document.getElementById('res').innerHTML = document.getElementById('res').innerHTML + '|' + results[0].geometry.viewport.b.f + '|' + results[0].geometry.viewport.f.b + '<br>';
+        //    }
+        //    else {
+        //        document.getElementById('res').innerHTML = document.getElementById('res').innerHTML + '|' + 'NO RESULT' + '<br>';
+        //    }
+        //}
+
+    </script>
+    <script>
+        $(document).ready(function () {
+            $("#div_csv").hide();
+            $('#ts').prop('checked', true);
+            $("#directions-panel").hide();
+            $("#excel-panel").hide();
+            $("#lblExcel-panel").hide();
+            $("#lblDirections-panel").hide();
+
+            $('input[type=radio]').click(function () {
+                $("#directions-panel").html("");
+                $("#directions-panel").hide();
+                $("#lblDirections-panel").hide();
+                $("#info").html("");
+                if (this.value == "f") {
+                    if ($('#f').prop('checked') == true) {
+                        $('#ts').prop('checked', false);
+                        $("#div_csv").show();
+                        $("#tour").hide();
+                    }
+                    else {
+                        $('#ts').prop('checked', true);
+                        $("#div_csv").hide();
+                        $("#tour").show();
+                    }
+                }
+                else {
+                    if ($('#ts').prop('checked') == true) {
+                        $('#f').prop('checked', false);
+                        $("#div_csv").hide();
+                        $("#tour").show();
+                    }
+                    else {
+                        $('#f').prop('checked', true);
+                        $("#div_csv").show();
+                        $("#tour").hide();
+                    }
+                }
+            });
+
+            $('#tourString').bind('keyup', function (e) {
+                if (e.keyCode == 32) {
+                    if (this.selectionStart >= this.value.length) {
+                        this.value = this.value.substring(0, this.value.length - 1) + ">";
+                        this.selectionStart = this.value.length;
+                    }
+                    else {
+                        this.value = this.value.replace(" ", "");
+                        this.selectionStart = this.value.length;
+                    }
+                }
+                if (e.keyCode == 13) { tour(); }
+            });
+
+
+            
+
+
+        });
+    </script>
+
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDQUuHfyoNqIDdxwl7adqvllcovJ1jNBQA&callback=initMap" async defer></script>
+</body>
+
+
+</html>
